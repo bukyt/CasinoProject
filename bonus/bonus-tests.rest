@@ -1,0 +1,34 @@
+### Create Bonus
+POST http://localhost:8083/bonuses
+Content-Type: application/json
+
+{
+  "name": "Welcome Bonus",
+  "description": "100% match bonus",
+  "wageringRequirement": 1000
+}
+
+###
+
+### List Bonuses
+GET http://localhost:8083/bonuses
+
+###
+
+### Get Bonus
+GET http://localhost:8083/bonuses/bonus-1
+
+###
+
+### Assign Bonus to Player
+POST http://localhost:8083/bonuses/bonus-1/assign
+Content-Type: application/json
+
+{
+  "playerId": "player-1"
+}
+
+###
+
+### List Player Bonuses
+GET http://localhost:8083/bonuses/players/player-1
