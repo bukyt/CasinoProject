@@ -1,0 +1,64 @@
+###
+# List all available games
+GET http://localhost:8082/games
+
+###
+# Create a new game session
+POST http://localhost:8082/games/sessions
+Content-Type: application/json
+
+{
+    "gameId": "slot-machine",
+    "initialBalance": 100.0
+}
+
+###
+# Use a known session ID (example: session-3)
+@sessionId = session-3
+
+###
+# Get the session
+GET http://localhost:8082/games/sessions/{{sessionId}}
+
+###
+# Place a bet
+POST http://localhost:8082/games/sessions/{{sessionId}}/bets
+Content-Type: application/json
+
+{
+    "amount": 10.0
+}
+
+###
+# Check session after bet
+GET http://localhost:8082/games/sessions/{{sessionId}}
+
+###
+# Place another bet
+POST http://localhost:8082/games/sessions/{{sessionId}}/bets
+Content-Type: application/json
+
+{
+    "amount": 20.0
+}
+
+###
+# Check session again
+GET http://localhost:8082/games/sessions/{{sessionId}}
+
+###
+# Close session
+PATCH http://localhost:8082/games/sessions/{{sessionId}}/close
+
+###
+# Verify closed session
+GET http://localhost:8082/games/sessions/{{sessionId}}
+
+###
+# Try invalid bet (should fail)
+POST http://localhost:8082/games/sessions/{{sessionId}}/bets
+Content-Type: application/json
+
+{
+    "amount": 5.0
+}

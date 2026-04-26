@@ -12,6 +12,7 @@
     <modules>
         <module>discovery-server</module>
         <module>api-gateway</module>
+        <module>game</module>
         <!-- <module>user-service</module> -->
         <!-- <module>wallet-service</module> -->
     </modules>
