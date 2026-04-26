@@ -4,7 +4,7 @@
 
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.casinoproject</groupId>
+    <groupId>com.casino</groupId>
     <artifactId>casino-parent</artifactId>
     <version>1.0.0</version>
     <packaging>pom</packaging>
@@ -12,6 +12,8 @@
     <modules>
         <module>discovery-server</module>
         <module>api-gateway</module>
+        <module>ledger</module>
+        <module>common</module>
         <!-- <module>user-service</module> -->
         <!-- <module>wallet-service</module> -->
     </modules>
