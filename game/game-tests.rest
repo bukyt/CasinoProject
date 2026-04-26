@@ -14,7 +14,7 @@ Content-Type: application/json
 
 ###
 # Use a known session ID (example: session-3)
-@sessionId = session-3
+@sessionId = session-1
 
 ###
 # Get the session
