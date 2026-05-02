@@ -24,7 +24,8 @@ public class PlayerProfileService {
 
     public PlayerProfileResponse createProfile(PlayerProfileRequest request) {
         if (playerProfileRepository.existsByAccountId(request.getAccountId())) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Profile already exists for accountId: " + request.getAccountId());
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Profile already exists for accountId: " + request.getAccountId());
         }
 
         PlayerProfile profile = PlayerProfile.builder()
@@ -57,7 +58,8 @@ public class PlayerProfileService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Profile not found"));
 
         if (playerProfileRepository.existsByAccountIdAndPlayerProfileIdNot(request.getAccountId(), id)) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Another profile already uses accountId: " + request.getAccountId());
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Another profile already uses accountId: " + request.getAccountId());
         }
 
         profile.setAccountId(request.getAccountId());
@@ -81,10 +83,17 @@ public class PlayerProfileService {
         PlayerProfile profile = playerProfileRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Profile not found"));
 
-        ContactDetails contactDetails = profile.getContactDetails() == null ? new ContactDetails() : profile.getContactDetails();
-        contactDetails.setEmail(request.getEmail());
-        contactDetails.setPhone(request.getPhone());
-        contactDetails.setAddress(request.getAddress());
+        ContactDetails contactDetails = profile.getContactDetails() == null ? new ContactDetails()
+                : profile.getContactDetails();
+        if (request.getEmail() != null) {
+            contactDetails.setEmail(request.getEmail());
+        }
+        if (request.getPhone() != null) {
+            contactDetails.setPhone(request.getPhone());
+        }
+        if (request.getAddress() != null) {
+            contactDetails.setAddress(request.getAddress());
+        }
         profile.setContactDetails(contactDetails);
 
         return mapToDto(playerProfileRepository.save(profile));
@@ -95,8 +104,12 @@ public class PlayerProfileService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Profile not found"));
 
         Preferences preferences = profile.getPreferences() == null ? new Preferences() : profile.getPreferences();
-        preferences.setLanguage(request.getLanguage());
-        preferences.setCurrency(request.getCurrency());
+        if (request.getLanguage() != null) {
+            preferences.setLanguage(request.getLanguage());
+        }
+        if (request.getCurrency() != null) {
+            preferences.setCurrency(request.getCurrency());
+        }
         profile.setPreferences(preferences);
 
         return mapToDto(playerProfileRepository.save(profile));

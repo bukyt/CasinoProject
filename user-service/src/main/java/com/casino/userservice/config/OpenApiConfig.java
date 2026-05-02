@@ -13,7 +13,7 @@ public class OpenApiConfig {
         return new OpenAPI()
                 .info(new Info()
                         .title("Player Profile Service")
-                        .description("REST API for player profiles (Checkpoint 1)")
+                        .description("REST API for player profiles")
                         .version("1.0.0"));
     }
 }
