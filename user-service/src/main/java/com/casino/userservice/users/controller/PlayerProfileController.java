@@ -45,7 +45,7 @@ public class PlayerProfileController {
     }
 
     @PatchMapping("/{id}/preferences")
-    public PlayerProfileResponse updatePreferences(@PathVariable String id, @RequestBody PreferencesRequest request) {
+    public PlayerProfileResponse updatePreferences(@PathVariable String id, @Valid @RequestBody PreferencesRequest request) {
         return playerProfileService.updatePreferences(id, request);
     }
 

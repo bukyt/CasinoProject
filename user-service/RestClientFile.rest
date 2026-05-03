@@ -13,7 +13,7 @@ POST http://localhost:8086/profiles
 content-type: application/json
 
 {
-  "accountId": "acc-102",
+  "accountId": "acc-106",
   "fullName": "Test Player",
   "dateOfBirth": "1999-04-15",
   "status": "ACTIVE",
@@ -32,12 +32,12 @@ PUT http://localhost:8086/profiles/pp-01
 content-type: application/json
 
 {
-  "accountId": "acc-10",
+  "accountId": "acc-104",
   "fullName": "Test Player Updated",
   "dateOfBirth": "1999-04-15",
   "status": "INACTIVE",
   "email": "updated.player@example.com",
-  "phone": "+3725000199",
+  "phone": "+3725000100",
   "address": "Tartu",
   "language": "et",
   "currency": "EUR"
@@ -49,7 +49,7 @@ content-type: application/json
 
 {
   "email": "contact.only@example.com",
-  "phone": "+3725000777",
+  "phone": "+3725000757",
   "address": "Parnuuuuu"
 }
 
@@ -63,4 +63,4 @@ content-type: application/json
 }
 
 ### Get profile by account id
-GET http://localhost:8086/profiles/account/acc-101
+GET http://localhost:8086/profiles/account/acc-103
