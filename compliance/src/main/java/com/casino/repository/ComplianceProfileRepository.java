@@ -12,4 +12,6 @@ public interface ComplianceProfileRepository extends JpaRepository<CompliancePro
     List<ComplianceProfile> findByPlayerProfileId(Long playerProfileId);
 
     Optional<ComplianceProfile> findFirstByPlayerProfileId(Long playerProfileId);
+
+    Optional<ComplianceProfile> findByPlayerId(Long playerId);
 }

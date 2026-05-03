@@ -6,85 +6,94 @@ import com.casino.exceptions.profile.ComplianceProfileMissingException;
 import com.casino.model.ComplianceProfile;
 import com.casino.model.ComplianceProfileRiskLevel;
 import com.casino.repository.ComplianceProfileRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
-import java.util.List;
+import java.util.EnumSet;
+import java.util.Set;
+
+import static com.casino.dto.EligibilityBlockReason.*;
 
 @Service
+@RequiredArgsConstructor
 public class EligibilityService {
 
     private final ComplianceProfileRepository complianceProfileRepository;
 
-    public EligibilityService(ComplianceProfileRepository complianceProfileRepository) {
-        this.complianceProfileRepository = complianceProfileRepository;
-    }
-
     @Transactional(readOnly = true)
     public EligibilityResponseDTO checkEligibility(Long playerProfileId) {
-        return complianceProfileRepository.findFirstByPlayerProfileId(playerProfileId)
-                .map(this::evaluateEligibility)
-                .orElseThrow(() -> new ComplianceProfileMissingException(playerProfileId));
+        ComplianceProfile profile = complianceProfileRepository
+            .findFirstByPlayerProfileId(playerProfileId)
+            .orElseThrow(() -> new ComplianceProfileMissingException(playerProfileId));
+
+        return evaluateEligibility(profile);
     }
 
     private EligibilityResponseDTO evaluateEligibility(ComplianceProfile profile) {
-        List<EligibilityBlockReason> blockReasons = new ArrayList<>();
+        Set<EligibilityBlockReason> blockReasons = EnumSet.noneOf(EligibilityBlockReason.class);
 
-        if (!profile.isAgeVerified()) {
-            blockReasons.add(EligibilityBlockReason.AGE_NOT_VERIFIED);
-        }
+        addProfileBlockReasons(profile, blockReasons);
 
-        if (profile.isSelfExcluded()) {
-            blockReasons.add(EligibilityBlockReason.SELF_EXCLUDED);
-        }
-
-        if (profile.getRiskLevel() == null
-                || profile.getRiskLevel() == ComplianceProfileRiskLevel.UNASSESSED) {
-            blockReasons.add(EligibilityBlockReason.AML_REVIEW_REQUIRED);
-        }
-
-        if (profile.getRiskLevel() == ComplianceProfileRiskLevel.HIGH) {
-            blockReasons.add(EligibilityBlockReason.HIGH_RISK_PROFILE);
-            blockReasons.add(EligibilityBlockReason.AML_REVIEW_REQUIRED);
-        }
-
-        if (profile.getRiskLevel() == ComplianceProfileRiskLevel.CRITICAL) {
-            blockReasons.add(EligibilityBlockReason.CRITICAL_RISK_PROFILE);
-            blockReasons.add(EligibilityBlockReason.AML_REVIEW_REQUIRED);
-        }
-
-        boolean mayBet = canBet(profile, blockReasons);
-        boolean mayWithdraw = canWithdraw(profile);
+        boolean mayBet = mayBet(blockReasons);
+        boolean mayWithdraw = mayWithdraw(blockReasons);
 
         return new EligibilityResponseDTO(
-                profile.getPlayerProfileId(),
-                mayBet,
-                mayWithdraw,
-                profile.getRiskLevel(),
-                profile.isAgeVerified(),
-                profile.isSelfExcluded(),
-                blockReasons,
-                OffsetDateTime.now()
+            profile.getPlayerProfileId(),
+            mayBet,
+            mayWithdraw,
+            profile.getRiskLevel(),
+            profile.isAgeVerified(),
+            profile.isSelfExcluded(),
+            new ArrayList<>(blockReasons),
+            OffsetDateTime.now()
         );
     }
 
-    private boolean canBet(
-            ComplianceProfile profile,
-            List<EligibilityBlockReason> blockReasons
+    private void addProfileBlockReasons(
+        ComplianceProfile profile,
+        Set<EligibilityBlockReason> blockReasons
     ) {
-        return blockReasons.isEmpty()
-                && profile.isAgeVerified()
-                && !profile.isSelfExcluded()
-                && profile.getRiskLevel() != ComplianceProfileRiskLevel.HIGH
-                && profile.getRiskLevel() != ComplianceProfileRiskLevel.CRITICAL;
+        if (!profile.isAgeVerified()) {
+            blockReasons.add(AGE_NOT_VERIFIED);
+        }
+
+        if (profile.isSelfExcluded()) {
+            blockReasons.add(SELF_EXCLUDED);
+        }
+
+        ComplianceProfileRiskLevel riskLevel = profile.getRiskLevel();
+
+        if (riskLevel == null || riskLevel == ComplianceProfileRiskLevel.UNASSESSED) {
+            blockReasons.add(AML_REVIEW_REQUIRED);
+            return;
+        }
+
+        if (riskLevel == ComplianceProfileRiskLevel.HIGH) {
+            blockReasons.add(HIGH_RISK_PROFILE);
+            blockReasons.add(AML_REVIEW_REQUIRED);
+            return;
+        }
+
+        if (riskLevel == ComplianceProfileRiskLevel.CRITICAL) {
+            blockReasons.add(CRITICAL_RISK_PROFILE);
+            blockReasons.add(AML_REVIEW_REQUIRED);
+        }
     }
 
-    private boolean canWithdraw(ComplianceProfile profile) {
-        return profile.isAgeVerified()
-                && profile.getRiskLevel() != ComplianceProfileRiskLevel.CRITICAL;
+    private boolean mayBet(Set<EligibilityBlockReason> blockReasons) {
+        return !blockReasons.contains(AGE_NOT_VERIFIED)
+            && !blockReasons.contains(SELF_EXCLUDED)
+            && !blockReasons.contains(HIGH_RISK_PROFILE)
+            && !blockReasons.contains(CRITICAL_RISK_PROFILE)
+            && !blockReasons.contains(AML_REVIEW_REQUIRED);
     }
 
-
+    private boolean mayWithdraw(Set<EligibilityBlockReason> blockReasons) {
+        return !blockReasons.contains(AGE_NOT_VERIFIED)
+            && !blockReasons.contains(CRITICAL_RISK_PROFILE)
+            && !blockReasons.contains(AML_REVIEW_REQUIRED);
+    }
 }

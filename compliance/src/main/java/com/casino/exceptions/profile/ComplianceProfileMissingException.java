@@ -1,14 +1,13 @@
 package com.casino.exceptions.profile;
 
 
-import com.casino.exceptions.BadRequestException;
+import com.casino.exceptions.NotFoundException;
 
 import java.util.Map;
 
-import static com.casino.exceptions.CommonApiErrorCodes.COMPLIANCE_PROFILE_EXISTS;
 import static com.casino.exceptions.CommonApiErrorCodes.COMPLIANCE_PROFILE_MISSING;
 
-public class ComplianceProfileMissingException extends BadRequestException {
+public class ComplianceProfileMissingException extends NotFoundException {
 
     public static final String EXAMPLE = """
         {
