@@ -123,6 +123,8 @@ for eureka stats
 | **bonus** | `8084` | `game_db` | Bonus management |
 | **profile-service** | `8086` | `profileservice_db` | User profiles & identity |
 
+for swagger add http://localhost:port/swagger-ui/index.html
+
 ---
 
 ## Prerequisites & Setup
