@@ -17,6 +17,7 @@
         <module>ledger</module>
         <module>common</module>
         <module>profile-service</module>
+        <module>auth-service</module>
         <!-- <module>wallet-service</module> -->
     </modules>
 
