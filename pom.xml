@@ -17,6 +17,7 @@
         <module>api-gateway</module>
         <module>discovery-server</module>
         <!-- <module>user-service</module> -->
+        <module>profile-service</module>
         <!-- <module>wallet-service</module> -->
     </modules>
 
