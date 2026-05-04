@@ -95,6 +95,12 @@ The current root modules are:
 - `api-gateway`
 - `discovery-server`
 
+Other modules
+
+- `game`
+- `bonus`
+- `profile-service`
+
 For local development, services are run separately. Eureka is available at:
 
 - `http://localhost:8080/eureka/web`
@@ -105,6 +111,35 @@ project for enterprise systems integration
 run each service seperately
 http://localhost:8761/
 for eureka stats  
+
+## Service Architecture & Port Mapping
+
+| Service | Port | Database | Description |
+| :--- | :--- | :--- | :--- |
+| **discovery-server** | `8761` | N/A | Eureka Service Registry |
+| **api-gateway** | `8080` | N/A | Central entry point |
+| **game** | `8082` | `game_db` | Game logic & financial event producer |
+| **ledger** | `8083` | `ledger_db` | Financial audit log & event consumer |
+| **bonus** | `8084` | `game_db` | Bonus management |
+| **profile-service** | `8086` | `profileservice_db` | User profiles & identity |
+
+---
+
+## Prerequisites & Setup
+
+### 1. Infrastructure
+Ensure the following are running on `localhost`:
+* **PostgreSQL:** Port `5432` (Create databases: `game_db`, `ledger_db`, `profileservice_db`)
+* **Kafka:** Port `9092`
+* **Java:** Version 17+
+
+### 2. Databases
+The services use Hibernate `ddl-auto: update` or `validate`. Ensure the databases exist before starting the services:
+```sql
+CREATE DATABASE game_db;
+CREATE DATABASE ledger_db;
+CREATE DATABASE profileservice_db;
+  
   
 # HOW TO ADD SERVICE  
 Add service to project root pom.xml in modules  
