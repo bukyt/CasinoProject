@@ -5,13 +5,16 @@
 The project currently uses one shared Kafka topic for financial events:
 
 - Topic: `financialEvents`
-- Shared constant: [common/src/main/java/com/casino/CasinoConstants.java](/mnt/c/kool/CasinoProject/common/src/main/java/com/casinoproject/CasinoConstants.java:1)
+- Shared
+  constant: [common/src/main/java/com/casino/CasinoConstants.java](/mnt/c/kool/CasinoProject/common/src/main/java/com/casinoproject/CasinoConstants.java:1)
 
-Multiple event types are published to the same topic. Consumers distinguish them by Kafka type headers and Spring Kafka JSON type mappings.
+Multiple event types are published to the same topic. Consumers distinguish them by Kafka type headers and Spring Kafka
+JSON type mappings.
 
 ## Event Model
 
-All financial events live under [common/src/main/java/com/casino/event](/mnt/c/kool/CasinoProject/common/src/main/java/com/casinoproject/event).
+All financial events live
+under [common/src/main/java/com/casino/event](/mnt/c/kool/CasinoProject/common/src/main/java/com/casinoproject/event).
 
 Base classes:
 
@@ -46,13 +49,15 @@ All four event types are expected on the same topic:
 
 - `financialEvents`
 
-This means producers publish different payload classes to one topic, and consumers must be able to deserialize polymorphic JSON safely.
+This means producers publish different payload classes to one topic, and consumers must be able to deserialize
+polymorphic JSON safely.
 
 In this project, that is done with Spring Kafka type headers plus explicit alias mappings in the ledger service.
 
 ## Ledger Consumer
 
-The ledger consumer is implemented in [ledger/src/main/java/com/casino/ledger/service/KafkaConsumerService.java](/mnt/c/kool/CasinoProject/ledger/src/main/java/com/casinoproject/ledger/service/KafkaConsumerService.java:1).
+The ledger consumer is implemented
+in [ledger/src/main/java/com/casino/ledger/service/KafkaConsumerService.java](/mnt/c/kool/CasinoProject/ledger/src/main/java/com/casinoproject/ledger/service/KafkaConsumerService.java:1).
 
 Current behavior:
 
@@ -105,23 +110,25 @@ For local development, services are run separately. Eureka is available at:
 
 - `http://localhost:8080/eureka/web`
 
-project for enterprise systems integration  
-  
+project for enterprise systems integration
+
 # RUN PROJECT
+
 run each service seperately
 http://localhost:8761/
-for eureka stats  
+for eureka stats
 
 ## Service Architecture & Port Mapping
 
-| Service | Port | Database | Description |
-| :--- | :--- | :--- | :--- |
-| **discovery-server** | `8761` | N/A | Eureka Service Registry |
-| **api-gateway** | `8080` | N/A | Central entry point |
-| **game** | `8082` | `game_db` | Game logic & financial event producer |
-| **ledger** | `8083` | `ledger_db` | Financial audit log & event consumer |
-| **bonus** | `8084` | `game_db` | Bonus management |
-| **profile-service** | `8086` | `profileservice_db` | User profiles & identity |
+| Service              | Port   | Database            | Description                           |
+|:---------------------|:-------|:--------------------|:--------------------------------------|
+| **discovery-server** | `8761` | N/A                 | Eureka Service Registry               |
+| **api-gateway**      | `8080` | N/A                 | Central entry point                   |
+| **game**             | `8082` | `game_db`           | Game logic & financial event producer |
+| **ledger**           | `8083` | `ledger_db`         | Financial audit log & event consumer  |
+| **bonus**            | `8084` | `game_db`           | Bonus management                      |
+| **profile-service**  | `8086` | `profileservice_db` | User profiles & identity              |
+| **compliance**       | `8087` | `compliance_db`     | Compliance service                    |
 
 for swagger add http://localhost:port/swagger-ui/index.html
 
@@ -130,19 +137,25 @@ for swagger add http://localhost:port/swagger-ui/index.html
 ## Prerequisites & Setup
 
 ### 1. Infrastructure
+
 Ensure the following are running on `localhost`:
-* **PostgreSQL:** Port `5432` (Create databases: `game_db`, `ledger_db`, `profileservice_db`)
+
+* **PostgreSQL:** Port `5432` (Create databases: `game_db`, `ledger_db`, `profileservice_db`, `compliance_db`)
 * **Kafka:** Port `9092`
 * **Java:** Version 17+
 
 ### 2. Databases
+
 The services use Hibernate `ddl-auto: update` or `validate`. Ensure the databases exist before starting the services:
+
 ```sql
 CREATE DATABASE game_db;
 CREATE DATABASE ledger_db;
 CREATE DATABASE profileservice_db;
+CREATE DATABASE compliance_db;
 ```
 
-# HOW TO ADD SERVICE  
+# HOW TO ADD SERVICE
+
 Add service to project root pom.xml in modules  
 Easiest way to add service is copy the already existing ones for structure of properties
