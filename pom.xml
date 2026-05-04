@@ -16,7 +16,7 @@
         <module>bonus</module>
         <module>ledger</module>
         <module>common</module>
-        <!-- <module>user-service</module> -->
+        <module>profile-service</module>
         <!-- <module>wallet-service</module> -->
     </modules>
 
