@@ -1,64 +1,65 @@
-###
-# List all available games
-GET http://localhost:8082/games
+### Base URL
+@baseUrl = http://localhost:8082
+
+##############################################
+### 1. LIST GAMES
+##############################################
+GET {{baseUrl}}/games
+Accept: application/json
 
 ###
-# Create a new game session
-POST http://localhost:8082/games/sessions
+
+##############################################
+### 2. CREATE SESSION
+# Your controller uses AtomicLong, so the ID will be "session-1" on first run
+##############################################
+POST {{baseUrl}}/games/sessions
 Content-Type: application/json
 
 {
-    "gameId": "slot-machine",
-    "initialBalance": 100.0
+  "gameId": "slot-machine",
+  "initialBalance": 100.0,
+  "playerProfileId": 123
 }
 
 ###
-# Use a known session ID (example: session-3)
+
+# IMPORTANT: Look at the response from step 2. 
+# If it's your first run, it's session-1.
 @sessionId = session-1
 
-###
-# Get the session
-GET http://localhost:8082/games/sessions/{{sessionId}}
-
-###
-# Place a bet
-POST http://localhost:8082/games/sessions/{{sessionId}}/bets
+##############################################
+### 3. PLACE BET (HAPPY PATH)
+##############################################
+POST {{baseUrl}}/games/sessions/{{sessionId}}/bets
 Content-Type: application/json
 
 {
-    "amount": 10.0
+  "amount": 10.0
 }
 
 ###
-# Check session after bet
-GET http://localhost:8082/games/sessions/{{sessionId}}
+
+##############################################
+### 4. GET SESSION (PROVE PERSISTENCE)
+# The balance should now be 90.0 (loss) or 110.0 (win)
+# The "bets" list should NOT be empty.
+##############################################
+GET {{baseUrl}}/games/sessions/{{sessionId}}
+Accept: application/json
 
 ###
-# Place another bet
-POST http://localhost:8082/games/sessions/{{sessionId}}/bets
+
+##############################################
+### 5. CLOSE SESSION
+##############################################
+PATCH {{baseUrl}}/games/sessions/{{sessionId}}/close
 Content-Type: application/json
 
-{
-    "amount": 20.0
-}
-
 ###
-# Check session again
-GET http://localhost:8082/games/sessions/{{sessionId}}
 
-###
-# Close session
-PATCH http://localhost:8082/games/sessions/{{sessionId}}/close
-
-###
-# Verify closed session
-GET http://localhost:8082/games/sessions/{{sessionId}}
-
-###
-# Try invalid bet (should fail)
-POST http://localhost:8082/games/sessions/{{sessionId}}/bets
-Content-Type: application/json
-
-{
-    "amount": 5.0
-}
+##############################################
+### 6. VERIFY LEDGER (8083)
+##############################################
+GET http://localhost:8083/ledger/player/123/balance
+Accept: application/json
