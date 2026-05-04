@@ -1,0 +1,52 @@
+### Auth REST client — start Postgres; use launch "Auth Service (local, no Eureka)" or --spring.profiles.active=local without discovery-server
+@host = http://localhost:8090
+
+### Register new account
+POST {{host}}/auth/register
+Content-Type: application/json
+
+{
+  "username": "player12",
+  "password": "secret12"
+}
+
+### Login
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{
+  "username": "player1",
+  "password": "secret12"
+}
+
+### Login as seeded admin (password from DataInitializer)
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "admin123"
+}
+
+### Current account (replace TOKEN)
+@token = eyJhbGciOiJIUzI1NiJ9.eyJhY2NvdW50SWQiOiJiNmFiNzIzMS0wNjE0LTQ2NjItOTEzNC1lMTYyZjBjM2MyODUiLCJyb2xlcyI6IlBMQVlFUiIsImp0aSI6ImJkN2I5MTA5LTUxNWItNGMxZi04OTQ0LTNlMmM2MjUxNTlhZCIsInN1YiI6InBsYXllcjEiLCJpYXQiOjE3Nzc4OTQ1NjIsImV4cCI6MTc3Nzg5ODE2Mn0.vHDexHEYzIi2igYzRVRqZs4rSZUjAxjF4cniQzXC-oA
+
+GET {{host}}/auth/me
+Authorization: Bearer {{token}}
+
+### Logout (invalidates this JWT until expiry)
+POST {{host}}/auth/logout
+Authorization: Bearer {{token}}
+
+### Get account by id (self or ADMIN)
+GET {{host}}/auth/accounts/a1b0b56d-7693-4f75-b42d-1138cfa5f824
+Authorization: Bearer {{token}}
+
+### Update account status — ADMIN only
+PATCH {{host}}/auth/accounts/b6ab7231-0614-4662-9134-e162f0c3c285/status
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJhY2NvdW50SWQiOiJhMWIwYjU2ZC03NjkzLTRmNzUtYjQyZC0xMTM4Y2ZhNWY4MjQiLCJyb2xlcyI6IkFETUlOLFBMQVlFUiIsImp0aSI6IjA3OTM0ZDJkLTNkZmMtNGYyMS1iZDU4LWNlMTg1NGI3ZTc4OSIsInN1YiI6ImFkbWluIiwiaWF0IjoxNzc3ODk0NzI0LCJleHAiOjE3Nzc4OTgzMjR9.vbnimVP2S63_GUChVxgI6FISlSD53u0r2IskoOQeSTg
+
+{
+  "status": "SUSPENDED"
+}
