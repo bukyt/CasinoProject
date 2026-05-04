@@ -17,10 +17,12 @@ public class GameService {
 
     private final GameSessionRepository repository;
     private final GameEventProducer eventProducer;
+    private final GameRepository gameRepository;
 
-    public GameService(GameSessionRepository repository, GameEventProducer eventProducer) {
+    public GameService(GameSessionRepository repository, GameEventProducer eventProducer, GameRepository gameRepository) {
         this.repository = repository;
         this.eventProducer = eventProducer;
+        this.gameRepository = gameRepository;
     }
 
     public GameSession createSession(String id, String gameId, double balance, Integer playerProfileId) {
@@ -38,9 +40,7 @@ public class GameService {
     }
 
     public List<Game> listGames() {
-        return List.of(
-                new Game("slot-machine", "Slot Machine", "Simple 3-reel slot machine")
-        );
+        return gameRepository.findAll();  // now fetched from DB
     }
     
     @Transactional
