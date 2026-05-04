@@ -139,8 +139,8 @@ The services use Hibernate `ddl-auto: update` or `validate`. Ensure the database
 CREATE DATABASE game_db;
 CREATE DATABASE ledger_db;
 CREATE DATABASE profileservice_db;
-  
-  
+```
+
 # HOW TO ADD SERVICE  
 Add service to project root pom.xml in modules  
 Easiest way to add service is copy the already existing ones for structure of properties
