@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ledger API Docs</title>
+    <style>
+        :root {
+            color-scheme: light;
+            --bg: #f5f1e8;
+            --panel: #fffdf8;
+            --ink: #1f2933;
+            --muted: #52606d;
+            --accent: #0b6e4f;
+            --border: #d9d2c3;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            background:
+                    radial-gradient(circle at top left, rgba(11, 110, 79, 0.12), transparent 28%),
+                    linear-gradient(180deg, #faf7f0 0%, var(--bg) 100%);
+            color: var(--ink);
+        }
+
+        main {
+            max-width: 860px;
+            margin: 0 auto;
+            padding: 48px 20px 64px;
+        }
+
+        .panel {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 32px;
+            box-shadow: 0 18px 48px rgba(31, 41, 51, 0.08);
+        }
+
+        h1 {
+            margin: 0 0 12px;
+            font-size: clamp(2rem, 4vw, 3rem);
+        }
+
+        p {
+            margin: 0 0 16px;
+            color: var(--muted);
+            line-height: 1.6;
+        }
+
+        ul {
+            margin: 24px 0;
+            padding-left: 20px;
+        }
+
+        li {
+            margin: 10px 0;
+        }
+
+        a {
+            color: var(--accent);
+            font-weight: 600;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        code {
+            background: rgba(11, 110, 79, 0.08);
+            border-radius: 6px;
+            padding: 2px 6px;
+        }
+    </style>
+</head>
+<body>
+<main>
+    <section class="panel">
+        <h1>Ledger Service API Docs</h1>
+        <p>
+            The ledger service publishes its OpenAPI document automatically at runtime. Use the links below to open the
+            interactive Swagger UI or the raw API descriptions.
+        </p>
+        <ul>
+            <li><a href="/swagger-ui.html">Swagger UI HTML</a></li>
+            <li><a href="/v3/api-docs">OpenAPI JSON</a></li>
+            <li><a href="/v3/api-docs.yaml">OpenAPI YAML</a></li>
+        </ul>
+        <p>
+            Default local URL: <code>http://localhost:8083</code>
+        </p>
+    </section>
+</main>
+</body>
+</html>
