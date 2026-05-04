@@ -40,11 +40,4 @@ public class ComplianceFlag {
 
     @Column(name = "resolved_date")
     private OffsetDateTime resolvedDate;
-
-    @PrePersist
-    protected void onCreate() {
-        if (createdDate == null) {
-            createdDate = OffsetDateTime.now();
-        }
-    }
 }

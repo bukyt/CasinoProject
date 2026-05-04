@@ -66,7 +66,7 @@ class ComplianceServiceTest {
         assertThat(response.playerProfileId()).isEqualTo(playerId);
         assertThat(response.ageVerified()).isFalse();
         assertThat(response.selfExcluded()).isFalse();
-        assertThat(response.riskLevel()).isEqualTo(ComplianceProfileRiskLevel.LOW);
+        assertThat(response.riskLevel()).isEqualTo(ComplianceProfileRiskLevel.UNASSESSED);
         assertThat(response.lastReviewDate()).isNotNull();
         assertThat(response.flags()).isEmpty();
         assertThat(response.limits()).isEmpty();

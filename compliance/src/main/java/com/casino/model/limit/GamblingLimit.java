@@ -50,10 +50,4 @@ public class GamblingLimit {
     @Column(name = "revoked_date")
     private OffsetDateTime revokedDate;
 
-    @PrePersist
-    protected void onCreate() {
-        if (createdDate == null) {
-            createdDate = OffsetDateTime.now();
-        }
-    }
 }

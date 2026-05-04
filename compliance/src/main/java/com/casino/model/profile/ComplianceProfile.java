@@ -58,8 +58,4 @@ public class ComplianceProfile {
     @EqualsAndHashCode.Exclude
     private List<ComplianceFlag> flags = new ArrayList<>();
 
-    @PrePersist
-    protected void onCreate() {
-        riskLevel = ComplianceProfileRiskLevel.UNASSESSED;
-    }
 }

@@ -43,7 +43,7 @@ public class ComplianceService {
         newProfile.setPlayerProfileId(playerProfileId);
         newProfile.setAgeVerified(false);
         newProfile.setSelfExcluded(false);
-        newProfile.setRiskLevel(ComplianceProfileRiskLevel.LOW);
+        newProfile.setRiskLevel(ComplianceProfileRiskLevel.UNASSESSED);
         newProfile.setLastReviewDate(now);
 
         ComplianceProfile savedProfile = complianceProfileRepository.save(newProfile);
