@@ -1,8 +1,8 @@
 package com.casino.api;
 
-import com.casino.dto.ComplianceLimitDto;
-import com.casino.dto.CreateComplianceLimitDTO;
-import com.casino.dto.ModifyComplianceLimitDTO;
+import com.casino.dto.limit.CreateGamblingLimitDTO;
+import com.casino.dto.limit.GamblingLimitDto;
+import com.casino.dto.limit.ModifyGamblingLimitDTO;
 import com.casino.exceptions.ApiException;
 import com.casino.exceptions.limit.ComplianceLimitExistsException;
 import com.casino.exceptions.limit.ComplianceLimitMissingException;
@@ -32,7 +32,7 @@ public interface ComplianceLimitApi {
 
     @Operation(
         summary = "Create gambling limit",
-        description = "Creates a responsible gambling limit for a player."
+        description = "Creates a gambling limit for a player."
     )
     @ApiResponses({
         @ApiResponse(
@@ -40,12 +40,12 @@ public interface ComplianceLimitApi {
             description = "Compliance limit created",
             content = @Content(
                 mediaType = MediaType.APPLICATION_JSON_VALUE,
-                schema = @Schema(implementation = ComplianceLimitDto.class),
+                schema = @Schema(implementation = GamblingLimitDto.class),
                 examples = @ExampleObject(
                     name = "compliance.limit.created",
                     summary = "Created compliance limit",
                     description = "Returned after successfully creating a gambling limit.",
-                    value = ComplianceLimitDto.EXAMPLE
+                    value = GamblingLimitDto.EXAMPLE
                 )
             )
         ),
@@ -87,16 +87,16 @@ public interface ComplianceLimitApi {
         )
     })
     @PostMapping
-    ResponseEntity<ComplianceLimitDto> createComplianceLimit(
+    ResponseEntity<GamblingLimitDto> createComplianceLimit(
         @Parameter(description = "Player profile ID", example = "123")
         @PathVariable Long playerId,
 
-        @Valid @RequestBody CreateComplianceLimitDTO request
+        @Valid @RequestBody CreateGamblingLimitDTO request
     );
 
     @Operation(
         summary = "Retrieve limits",
-        description = "Returns all responsible gambling limits for a player."
+        description = "Returns all gambling limits for a player."
     )
     @ApiResponses({
         @ApiResponse(
@@ -104,12 +104,12 @@ public interface ComplianceLimitApi {
             description = "Compliance limits returned",
             content = @Content(
                 mediaType = MediaType.APPLICATION_JSON_VALUE,
-                array = @ArraySchema(schema = @Schema(implementation = ComplianceLimitDto.class)),
+                array = @ArraySchema(schema = @Schema(implementation = GamblingLimitDto.class)),
                 examples = @ExampleObject(
                     name = "compliance.limits",
                     summary = "Compliance limits",
                     description = "The gambling limits configured for the requested player.",
-                    value = ComplianceLimitDto.LIST_EXAMPLE
+                    value = GamblingLimitDto.LIST_EXAMPLE
                 )
             )
         ),
@@ -129,14 +129,14 @@ public interface ComplianceLimitApi {
         )
     })
     @GetMapping
-    ResponseEntity<List<ComplianceLimitDto>> getComplianceLimits(
+    ResponseEntity<List<GamblingLimitDto>> getComplianceLimits(
         @Parameter(description = "Player profile ID", example = "123")
         @PathVariable Long playerId
     );
 
     @Operation(
         summary = "Modify limit",
-        description = "Partially updates a gambling limit. Only provided fields are modified."
+        description = "Partially updates a gambling limit. Provided fields are modified."
     )
     @ApiResponses({
         @ApiResponse(
@@ -144,12 +144,12 @@ public interface ComplianceLimitApi {
             description = "Compliance limit updated",
             content = @Content(
                 mediaType = MediaType.APPLICATION_JSON_VALUE,
-                schema = @Schema(implementation = ComplianceLimitDto.class),
+                schema = @Schema(implementation = GamblingLimitDto.class),
                 examples = @ExampleObject(
                     name = "compliance.limit.updated",
                     summary = "Updated compliance limit",
                     description = "Returned after successfully modifying a gambling limit.",
-                    value = ComplianceLimitDto.EXAMPLE
+                    value = GamblingLimitDto.EXAMPLE
                 )
             )
         ),
@@ -185,13 +185,13 @@ public interface ComplianceLimitApi {
         )
     })
     @PatchMapping("/{limitId}")
-    ResponseEntity<ComplianceLimitDto> modifyComplianceLimit(
+    ResponseEntity<GamblingLimitDto> modifyComplianceLimit(
         @Parameter(description = "Player profile ID", example = "123")
         @PathVariable Long playerId,
 
         @Parameter(description = "Compliance limit ID", example = "456")
         @PathVariable Long limitId,
 
-        @Valid @RequestBody ModifyComplianceLimitDTO request
+        @Valid @RequestBody ModifyGamblingLimitDTO request
     );
 }

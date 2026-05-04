@@ -1,8 +1,8 @@
 package com.casino.api;
 
-import com.casino.dto.ComplianceFlagDto;
-import com.casino.dto.CreateComplianceFlagDTO;
-import com.casino.dto.ModifyComplianceFlagDTO;
+import com.casino.dto.flag.ComplianceFlagDto;
+import com.casino.dto.flag.CreateComplianceFlagDTO;
+import com.casino.dto.flag.ModifyComplianceFlagDTO;
 import com.casino.exceptions.ApiException;
 import com.casino.exceptions.flag.ComplianceFlagExistsException;
 import com.casino.exceptions.flag.ComplianceFlagMissingException;

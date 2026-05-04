@@ -1,8 +1,7 @@
 package com.casino.exceptions.flag;
 
 import com.casino.exceptions.ConflictException;
-import com.casino.model.ComplianceFlagSeverity;
-import com.casino.model.ComplianceFlagType;
+import com.casino.model.flag.ComplianceFlagType;
 
 import java.util.Map;
 
@@ -23,18 +22,16 @@ public class ComplianceFlagExistsException extends ConflictException {
         """;
 
     public ComplianceFlagExistsException(
-            Long playerId,
-            ComplianceFlagType type,
-            ComplianceFlagSeverity severity
+        Long playerId,
+        ComplianceFlagType type
     ) {
         super(
-                COMPLIANCE_FLAG_EXISTS,
-                "Active " + type + " " + severity + " compliance flag for player " + playerId + " already exists",
-                Map.of(
-                        "playerId", playerId.toString(),
-                        "type", type.name(),
-                        "severity", severity.name()
-                )
+            COMPLIANCE_FLAG_EXISTS,
+            "Active " + type + " compliance flag for player " + playerId + " already exists",
+            Map.of(
+                "playerId", playerId.toString(),
+                "type", type.name()
+            )
         );
     }
 }

@@ -1,16 +1,17 @@
 package com.casino.service;
 
-import com.casino.dto.ComplianceFlagDto;
-import com.casino.dto.CreateComplianceFlagDTO;
-import com.casino.dto.ModifyComplianceFlagDTO;
+import com.casino.dto.flag.ComplianceFlagDto;
+import com.casino.dto.flag.CreateComplianceFlagDTO;
+import com.casino.dto.flag.ModifyComplianceFlagDTO;
 import com.casino.exceptions.flag.ComplianceFlagExistsException;
 import com.casino.exceptions.flag.ComplianceFlagMissingException;
 import com.casino.exceptions.flag.InvalidComplianceFlagException;
 import com.casino.exceptions.profile.ComplianceProfileMissingException;
-import com.casino.model.ComplianceFlag;
-import com.casino.model.ComplianceFlagSeverity;
-import com.casino.model.ComplianceFlagType;
-import com.casino.model.ComplianceProfile;
+import com.casino.model.flag.ComplianceFlag;
+import com.casino.model.flag.ComplianceFlagSeverity;
+import com.casino.model.flag.ComplianceFlagType;
+import com.casino.model.profile.ComplianceProfile;
+import com.casino.model.profile.ComplianceProfileRiskLevel;
 import com.casino.repository.ComplianceFlagRepository;
 import com.casino.repository.ComplianceProfileRepository;
 import lombok.RequiredArgsConstructor;
@@ -30,128 +31,268 @@ public class FlagService {
 
     @Transactional
     public ComplianceFlagDto createComplianceFlag(
-            Long playerId,
-            CreateComplianceFlagDTO request
+        Long playerId,
+        CreateComplianceFlagDTO request
     ) {
         ComplianceProfile profile = getComplianceProfileOrThrow(playerId);
 
-        ensureNoDuplicateActiveFlag(
-                playerId,
-                profile.getComplianceId(),
-                request.type(),
-                request.severity(),
-                null
+        validateCreateRequest(request);
+
+        ensureNoDuplicateUnresolvedType(
+            playerId,
+            profile.getComplianceId(),
+            request.type(),
+            null
         );
 
+        OffsetDateTime now = OffsetDateTime.now();
+
         ComplianceFlag flag = new ComplianceFlag();
-        flag.setComplianceId(profile.getComplianceId());
+        flag.setComplianceProfile(profile);
         flag.setType(request.type());
         flag.setSeverity(request.severity());
-        flag.setCreatedDate(OffsetDateTime.now());
+        flag.setCreatedDate(now);
         flag.setResolvedDate(null);
 
-        ComplianceFlag savedFlag = complianceFlagRepository.save(flag);
+        ComplianceFlag savedFlag = complianceFlagRepository.saveAndFlush(flag);
+
+        updateProfileAfterFlagChange(profile, now);
+        complianceProfileRepository.save(profile);
 
         return toDto(savedFlag);
     }
 
     @Transactional
     public ComplianceFlagDto modifyComplianceFlag(
-            Long playerId,
-            Long flagId,
-            ModifyComplianceFlagDTO request
+        Long playerId,
+        Long flagId,
+        ModifyComplianceFlagDTO request
     ) {
         ComplianceProfile profile = getComplianceProfileOrThrow(playerId);
 
         ComplianceFlag flag = complianceFlagRepository
-                .findByFlagIdAndComplianceId(flagId, profile.getComplianceId())
-                .orElseThrow(() -> new ComplianceFlagMissingException(flagId));
+            .findByFlagIdAndComplianceProfile_ComplianceId(
+                flagId,
+                profile.getComplianceId()
+            )
+            .orElseThrow(() -> new ComplianceFlagMissingException(flagId));
+
+        OffsetDateTime now = OffsetDateTime.now();
 
         ComplianceFlagType newType = request.type() != null
-                ? request.type()
-                : flag.getType();
+            ? request.type()
+            : flag.getType();
 
         ComplianceFlagSeverity newSeverity = request.severity() != null
-                ? request.severity()
-                : flag.getSeverity();
+            ? request.severity()
+            : flag.getSeverity();
 
         OffsetDateTime newResolvedDate = request.resolvedDate() != null
-                ? request.resolvedDate()
-                : flag.getResolvedDate();
+            ? request.resolvedDate()
+            : flag.getResolvedDate();
 
-        validateResolvedDate(flag.getCreatedDate(), newResolvedDate);
+        if (isResolvedSeverity(newSeverity) && newResolvedDate == null) {
+            newResolvedDate = now;
+        }
 
-        ensureNoDuplicateActiveFlag(
+        validateModifiedValues(
+            flag.getCreatedDate(),
+            newType,
+            newSeverity,
+            newResolvedDate
+        );
+
+        boolean finalStateIsResolved = isResolvedState(newSeverity, newResolvedDate);
+
+        if (!finalStateIsResolved) {
+            ensureNoDuplicateUnresolvedType(
                 playerId,
                 profile.getComplianceId(),
                 newType,
-                newSeverity,
                 flagId
-        );
-
-        if (request.type() != null) {
-            flag.setType(request.type());
+            );
         }
 
-        if (request.severity() != null) {
-            flag.setSeverity(request.severity());
-        }
+        flag.setType(newType);
+        flag.setSeverity(newSeverity);
+        flag.setResolvedDate(newResolvedDate);
 
-        if (request.resolvedDate() != null) {
-            flag.setResolvedDate(request.resolvedDate());
-        }
+        ComplianceFlag savedFlag = complianceFlagRepository.saveAndFlush(flag);
 
-        ComplianceFlag savedFlag = complianceFlagRepository.save(flag);
+        updateProfileAfterFlagChange(profile, now);
+        complianceProfileRepository.save(profile);
 
         return toDto(savedFlag);
     }
 
     private ComplianceProfile getComplianceProfileOrThrow(Long playerId) {
         return complianceProfileRepository
-                .findByPlayerId(playerId)
-                .orElseThrow(() -> new ComplianceProfileMissingException(playerId));
+            .findFirstByPlayerProfileId(playerId)
+            .orElseThrow(() -> new ComplianceProfileMissingException(playerId));
     }
 
-    private void ensureNoDuplicateActiveFlag(
-            Long playerId,
-            Long complianceId,
-            ComplianceFlagType type,
-            ComplianceFlagSeverity severity,
-            Long excludedFlagId
-    ) {
-        List<ComplianceFlag> existingFlags = complianceFlagRepository
-                .findByComplianceIdAndTypeAndSeverity(complianceId, type, severity);
-
-        boolean duplicateExists = existingFlags.stream()
-                .anyMatch(flag ->
-                        !Objects.equals(flag.getFlagId(), excludedFlagId)
-                                && flag.getResolvedDate() == null
-                );
-
-        if (duplicateExists) {
-            throw new ComplianceFlagExistsException(playerId, type, severity);
+    private void validateCreateRequest(CreateComplianceFlagDTO request) {
+        if (request.type() == null) {
+            throw new InvalidComplianceFlagException("Flag type is required.");
         }
-    }
 
-    private void validateResolvedDate(
-            OffsetDateTime createdDate,
-            OffsetDateTime resolvedDate
-    ) {
-        if (resolvedDate != null && resolvedDate.isBefore(createdDate)) {
+        if (request.severity() == null) {
+            throw new InvalidComplianceFlagException("Flag severity is required.");
+        }
+
+        if (isResolvedSeverity(request.severity())) {
             throw new InvalidComplianceFlagException(
-                    "Resolved date cannot be before created date"
+                "A new flag cannot be created as resolved. Create the flag first, then resolve it using PATCH."
             );
         }
     }
 
+    private void validateModifiedValues(
+        OffsetDateTime createdDate,
+        ComplianceFlagType type,
+        ComplianceFlagSeverity severity,
+        OffsetDateTime resolvedDate
+    ) {
+        if (type == null) {
+            throw new InvalidComplianceFlagException("Flag type is required.");
+        }
+
+        if (severity == null) {
+            throw new InvalidComplianceFlagException("Flag severity is required.");
+        }
+
+        validateResolvedDate(createdDate, resolvedDate);
+        validateResolvedState(severity, resolvedDate);
+    }
+
+    private void validateResolvedDate(
+        OffsetDateTime createdDate,
+        OffsetDateTime resolvedDate
+    ) {
+        if (resolvedDate != null && resolvedDate.isBefore(createdDate)) {
+            throw new InvalidComplianceFlagException(
+                "Resolved date cannot be before created date."
+            );
+        }
+    }
+
+    private void validateResolvedState(
+        ComplianceFlagSeverity severity,
+        OffsetDateTime resolvedDate
+    ) {
+        boolean hasResolvedDate = resolvedDate != null;
+        boolean hasResolvedSeverity = isResolvedSeverity(severity);
+
+        if (hasResolvedDate && !hasResolvedSeverity) {
+            throw new InvalidComplianceFlagException(
+                "A flag with a resolved date must have severity RESOLVED or RESOLVED_ADMIN."
+            );
+        }
+
+        if (hasResolvedSeverity && !hasResolvedDate) {
+            throw new InvalidComplianceFlagException(
+                "A flag with severity RESOLVED or RESOLVED_ADMIN must have a resolved date."
+            );
+        }
+    }
+
+    private void ensureNoDuplicateUnresolvedType(
+        Long playerId,
+        Long complianceId,
+        ComplianceFlagType type,
+        Long excludedFlagId
+    ) {
+        List<ComplianceFlag> existingFlags = complianceFlagRepository
+            .findByComplianceProfile_ComplianceIdAndType(
+                complianceId,
+                type
+            );
+
+        boolean duplicateExists = existingFlags.stream()
+            .anyMatch(flag ->
+                !Objects.equals(flag.getFlagId(), excludedFlagId)
+                    && isUnresolved(flag)
+            );
+
+        if (duplicateExists) {
+            throw new ComplianceFlagExistsException(playerId, type);
+        }
+    }
+
+    private void updateProfileAfterFlagChange(
+        ComplianceProfile profile,
+        OffsetDateTime changedAt
+    ) {
+        profile.setLastReviewDate(changedAt);
+        profile.setRiskLevel(
+            calculateRiskLevelFromUnresolvedFlags(profile.getComplianceId())
+        );
+    }
+
+    private ComplianceProfileRiskLevel calculateRiskLevelFromUnresolvedFlags(Long complianceId) {
+        List<ComplianceFlag> flags = complianceFlagRepository
+            .findByComplianceProfile_ComplianceId(complianceId);
+
+        boolean hasHigh = flags.stream()
+            .anyMatch(flag ->
+                isUnresolved(flag)
+                    && flag.getSeverity() == ComplianceFlagSeverity.HIGH
+            );
+
+        if (hasHigh) {
+            return ComplianceProfileRiskLevel.HIGH;
+        }
+
+        boolean hasMedium = flags.stream()
+            .anyMatch(flag ->
+                isUnresolved(flag)
+                    && flag.getSeverity() == ComplianceFlagSeverity.MEDIUM
+            );
+
+        if (hasMedium) {
+            return ComplianceProfileRiskLevel.HIGH;
+        }
+
+        boolean hasLow = flags.stream()
+            .anyMatch(flag ->
+                isUnresolved(flag)
+                    && flag.getSeverity() == ComplianceFlagSeverity.LOW
+            );
+
+        if (hasLow) {
+            return ComplianceProfileRiskLevel.LOW;
+        }
+
+        return ComplianceProfileRiskLevel.LOW;
+    }
+
+    private boolean isUnresolved(ComplianceFlag flag) {
+        return !isResolvedState(
+            flag.getSeverity(),
+            flag.getResolvedDate()
+        );
+    }
+
+    private boolean isResolvedState(
+        ComplianceFlagSeverity severity,
+        OffsetDateTime resolvedDate
+    ) {
+        return resolvedDate != null && isResolvedSeverity(severity);
+    }
+
+    private boolean isResolvedSeverity(ComplianceFlagSeverity severity) {
+        return severity == ComplianceFlagSeverity.RESOLVED
+            || severity == ComplianceFlagSeverity.RESOLVED_ADMIN;
+    }
+
     private ComplianceFlagDto toDto(ComplianceFlag flag) {
         return new ComplianceFlagDto(
-                flag.getFlagId(),
-                flag.getComplianceId(),
-                flag.getType(),
-                flag.getSeverity(),
-                flag.getCreatedDate(),
-                flag.getResolvedDate()
+            flag.getFlagId(),
+            flag.getComplianceProfile().getComplianceId(),
+            flag.getType(),
+            flag.getSeverity(),
+            flag.getCreatedDate(),
+            flag.getResolvedDate()
         );
     }
 }

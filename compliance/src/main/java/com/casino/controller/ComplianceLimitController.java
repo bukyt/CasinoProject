@@ -1,9 +1,9 @@
 package com.casino.controller;
 
 import com.casino.api.ComplianceLimitApi;
-import com.casino.dto.ComplianceLimitDto;
-import com.casino.dto.CreateComplianceLimitDTO;
-import com.casino.dto.ModifyComplianceLimitDTO;
+import com.casino.dto.limit.CreateGamblingLimitDTO;
+import com.casino.dto.limit.GamblingLimitDto;
+import com.casino.dto.limit.ModifyGamblingLimitDTO;
 import com.casino.service.LimitService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -19,28 +19,28 @@ public class ComplianceLimitController implements ComplianceLimitApi {
     private final LimitService complianceLimitService;
 
     @Override
-    public ResponseEntity<ComplianceLimitDto> createComplianceLimit(
-            Long playerId,
-            CreateComplianceLimitDTO request
+    public ResponseEntity<GamblingLimitDto> createComplianceLimit(
+        Long playerId,
+        CreateGamblingLimitDTO request
     ) {
         return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(complianceLimitService.createComplianceLimit(playerId, request));
+            .status(HttpStatus.CREATED)
+            .body(complianceLimitService.createComplianceLimit(playerId, request));
     }
 
     @Override
-    public ResponseEntity<List<ComplianceLimitDto>> getComplianceLimits(Long playerId) {
+    public ResponseEntity<List<GamblingLimitDto>> getComplianceLimits(Long playerId) {
         return ResponseEntity.ok(complianceLimitService.getComplianceLimits(playerId));
     }
 
     @Override
-    public ResponseEntity<ComplianceLimitDto> modifyComplianceLimit(
-            Long playerId,
-            Long limitId,
-            ModifyComplianceLimitDTO request
+    public ResponseEntity<GamblingLimitDto> modifyComplianceLimit(
+        Long playerId,
+        Long limitId,
+        ModifyGamblingLimitDTO request
     ) {
         return ResponseEntity.ok(
-                complianceLimitService.modifyComplianceLimit(playerId, limitId, request)
+            complianceLimitService.modifyComplianceLimit(playerId, limitId, request)
         );
     }
 }

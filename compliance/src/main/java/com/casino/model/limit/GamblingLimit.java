@@ -1,20 +1,14 @@
-package com.casino.model;
+package com.casino.model.limit;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import com.casino.model.profile.ComplianceProfile;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.persistence.*;
+import lombok.*;
 
 import java.time.OffsetDateTime;
 
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
@@ -26,8 +20,12 @@ public class GamblingLimit {
     @Column(name = "limit_id", nullable = false, updatable = false)
     private Long limitId;
 
-    @Column(name = "compliance_id", nullable = false)
-    private Long complianceId;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "compliance_id", nullable = false)
+    @JsonIgnore
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private ComplianceProfile complianceProfile;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "limit_type", nullable = false, length = 50)
@@ -51,4 +49,11 @@ public class GamblingLimit {
 
     @Column(name = "revoked_date")
     private OffsetDateTime revokedDate;
+
+    @PrePersist
+    protected void onCreate() {
+        if (createdDate == null) {
+            createdDate = OffsetDateTime.now();
+        }
+    }
 }

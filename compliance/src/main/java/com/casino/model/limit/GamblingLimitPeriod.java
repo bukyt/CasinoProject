@@ -1,4 +1,4 @@
-package com.casino.model;
+package com.casino.model.limit;
 
 public enum GamblingLimitPeriod {
     DAILY,

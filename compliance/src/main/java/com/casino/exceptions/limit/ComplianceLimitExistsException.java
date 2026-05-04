@@ -1,10 +1,10 @@
 package com.casino.exceptions.limit;
 
-import java.util.Map;
-
 import com.casino.exceptions.ConflictException;
-import com.casino.model.GamblingLimitPeriod;
-import com.casino.model.GamblingLimitType;
+import com.casino.model.limit.GamblingLimitPeriod;
+import com.casino.model.limit.GamblingLimitType;
+
+import java.util.Map;
 
 import static com.casino.exceptions.CommonApiErrorCodes.COMPLIANCE_LIMIT_EXISTS;
 
@@ -23,18 +23,18 @@ public class ComplianceLimitExistsException extends ConflictException {
         """;
 
     public ComplianceLimitExistsException(
-            Long playerId,
-            GamblingLimitType type,
-            GamblingLimitPeriod period
+        Long playerId,
+        GamblingLimitType type,
+        GamblingLimitPeriod period
     ) {
         super(
-                COMPLIANCE_LIMIT_EXISTS,
-                "Active " + type + " " + period + " gambling limit for player " + playerId + " already exists",
-                Map.of(
-                        "playerId", playerId.toString(),
-                        "type", type.name(),
-                        "period", period.name()
-                )
+            COMPLIANCE_LIMIT_EXISTS,
+            "Active " + type + " " + period + " gambling limit for player " + playerId + " already exists",
+            Map.of(
+                "playerId", playerId.toString(),
+                "type", type.name(),
+                "period", period.name()
+            )
         );
     }
 }

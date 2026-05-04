@@ -1,16 +1,15 @@
 package com.casino.service;
 
-import com.casino.dto.ComplianceLimitDto;
-import com.casino.dto.CreateComplianceLimitDTO;
-import com.casino.dto.ModifyComplianceLimitDTO;
-import com.casino.exceptions.limit.ComplianceLimitExistsException;
+import com.casino.dto.limit.CreateGamblingLimitDTO;
+import com.casino.dto.limit.GamblingLimitDto;
+import com.casino.dto.limit.ModifyGamblingLimitDTO;
 import com.casino.exceptions.limit.ComplianceLimitMissingException;
 import com.casino.exceptions.limit.InvalidComplianceLimitException;
 import com.casino.exceptions.profile.ComplianceProfileMissingException;
-import com.casino.model.ComplianceProfile;
-import com.casino.model.GamblingLimit;
-import com.casino.model.GamblingLimitPeriod;
-import com.casino.model.GamblingLimitType;
+import com.casino.model.limit.GamblingLimit;
+import com.casino.model.limit.GamblingLimitPeriod;
+import com.casino.model.limit.GamblingLimitType;
+import com.casino.model.profile.ComplianceProfile;
 import com.casino.repository.ComplianceProfileRepository;
 import com.casino.repository.GamblingLimitRepository;
 import lombok.RequiredArgsConstructor;
@@ -29,153 +28,188 @@ public class LimitService {
     private final ComplianceProfileRepository complianceProfileRepository;
 
     @Transactional
-    public ComplianceLimitDto createComplianceLimit(
-            Long playerId,
-            CreateComplianceLimitDTO request
+    public GamblingLimitDto createComplianceLimit(
+        Long playerId,
+        CreateGamblingLimitDTO request
     ) {
         ComplianceProfile profile = getComplianceProfileOrThrow(playerId);
 
-        validateDateRange(request.startDate(), request.endDate());
+        validateCreateRequest(request);
 
-        ensureNoDuplicateActiveLimit(
-                playerId,
-                profile.getComplianceId(),
-                request.type(),
-                request.period(),
-                null
+        OffsetDateTime now = OffsetDateTime.now();
+
+        revokeCurrentlyActiveLimitsOfSameType(
+            profile.getComplianceId(),
+            request.type(),
+            now,
+            null
         );
 
         GamblingLimit limit = new GamblingLimit();
-        limit.setComplianceId(profile.getComplianceId());
+        limit.setComplianceProfile(profile);
         limit.setType(request.type());
         limit.setAmount(request.amount());
         limit.setPeriod(request.period());
-        limit.setCreatedDate(OffsetDateTime.now());
+        limit.setCreatedDate(now);
         limit.setStartDate(request.startDate());
         limit.setEndDate(request.endDate());
         limit.setRevokedDate(null);
 
+        profile.setLastReviewDate(now);
+
         GamblingLimit savedLimit = gamblingLimitRepository.save(limit);
+        complianceProfileRepository.save(profile);
 
         return toDto(savedLimit);
     }
 
     @Transactional(readOnly = true)
-    public List<ComplianceLimitDto> getComplianceLimits(Long playerId) {
+    public List<GamblingLimitDto> getComplianceLimits(Long playerId) {
         ComplianceProfile profile = getComplianceProfileOrThrow(playerId);
 
         return gamblingLimitRepository
-                .findByComplianceIdOrderByCreatedDateDesc(profile.getComplianceId())
-                .stream()
-                .map(this::toDto)
-                .toList();
+            .findByComplianceProfile_ComplianceIdOrderByCreatedDateDesc(profile.getComplianceId())
+            .stream()
+            .map(this::toDto)
+            .toList();
     }
 
     @Transactional
-    public ComplianceLimitDto modifyComplianceLimit(
-            Long playerId,
-            Long limitId,
-            ModifyComplianceLimitDTO request
+    public GamblingLimitDto modifyComplianceLimit(
+        Long playerId,
+        Long limitId,
+        ModifyGamblingLimitDTO request
     ) {
         ComplianceProfile profile = getComplianceProfileOrThrow(playerId);
 
         GamblingLimit limit = gamblingLimitRepository
-                .findByLimitIdAndComplianceId(limitId, profile.getComplianceId())
-                .orElseThrow(() -> new ComplianceLimitMissingException(limitId));
+            .findByLimitIdAndComplianceProfile_ComplianceId(
+                limitId,
+                profile.getComplianceId()
+            )
+            .orElseThrow(() -> new ComplianceLimitMissingException(limitId));
 
         GamblingLimitType newType = request.type() != null
-                ? request.type()
-                : limit.getType();
+            ? request.type()
+            : limit.getType();
 
         GamblingLimitPeriod newPeriod = request.period() != null
-                ? request.period()
-                : limit.getPeriod();
+            ? request.period()
+            : limit.getPeriod();
+
+        Integer newAmount = request.amount() != null
+            ? request.amount()
+            : limit.getAmount();
 
         OffsetDateTime newStartDate = request.startDate() != null
-                ? request.startDate()
-                : limit.getStartDate();
+            ? request.startDate()
+            : limit.getStartDate();
 
         OffsetDateTime newEndDate = request.endDate() != null
-                ? request.endDate()
-                : limit.getEndDate();
+            ? request.endDate()
+            : limit.getEndDate();
 
+        OffsetDateTime newRevokedDate = request.revokedDate() != null
+            ? request.revokedDate()
+            : limit.getRevokedDate();
+
+        validateAmount(newAmount);
         validateDateRange(newStartDate, newEndDate);
 
-        ensureNoDuplicateActiveLimit(
-                playerId,
+        OffsetDateTime now = OffsetDateTime.now();
+
+        if (isCurrentlyActive(newStartDate, newEndDate, newRevokedDate, now)) {
+            revokeCurrentlyActiveLimitsOfSameType(
                 profile.getComplianceId(),
                 newType,
-                newPeriod,
+                now,
                 limitId
-        );
-
-        if (request.type() != null) {
-            limit.setType(request.type());
+            );
         }
 
-        if (request.amount() != null) {
-            limit.setAmount(request.amount());
-        }
+        limit.setType(newType);
+        limit.setAmount(newAmount);
+        limit.setPeriod(newPeriod);
+        limit.setStartDate(newStartDate);
+        limit.setEndDate(newEndDate);
+        limit.setRevokedDate(newRevokedDate);
 
-        if (request.period() != null) {
-            limit.setPeriod(request.period());
-        }
-
-        if (request.startDate() != null) {
-            limit.setStartDate(request.startDate());
-        }
-
-        if (request.endDate() != null) {
-            limit.setEndDate(request.endDate());
-        }
-
-        if (request.revokedDate() != null) {
-            limit.setRevokedDate(request.revokedDate());
-        }
+        profile.setLastReviewDate(now);
 
         GamblingLimit savedLimit = gamblingLimitRepository.save(limit);
+        complianceProfileRepository.save(profile);
 
         return toDto(savedLimit);
     }
 
     private ComplianceProfile getComplianceProfileOrThrow(Long playerId) {
         return complianceProfileRepository
-                .findByPlayerId(playerId)
-                .orElseThrow(() -> new ComplianceProfileMissingException(playerId));
+            .findFirstByPlayerProfileId(playerId)
+            .orElseThrow(() -> new ComplianceProfileMissingException(playerId));
     }
 
-    private void ensureNoDuplicateActiveLimit(
-            Long playerId,
-            Long complianceId,
-            GamblingLimitType type,
-            GamblingLimitPeriod period,
-            Long excludedLimitId
+    private void revokeCurrentlyActiveLimitsOfSameType(
+        Long complianceId,
+        GamblingLimitType type,
+        OffsetDateTime now,
+        Long excludedLimitId
     ) {
-        OffsetDateTime now = OffsetDateTime.now();
+        List<GamblingLimit> activeLimitsToRevoke = gamblingLimitRepository
+            .findByComplianceProfile_ComplianceIdAndType(complianceId, type)
+            .stream()
+            .filter(limit -> !Objects.equals(limit.getLimitId(), excludedLimitId))
+            .filter(limit -> isCurrentlyActive(limit, now))
+            .toList();
 
-        boolean duplicateExists = gamblingLimitRepository
-                .findByComplianceIdAndTypeAndPeriod(complianceId, type, period)
-                .stream()
-                .anyMatch(limit ->
-                        !Objects.equals(limit.getLimitId(), excludedLimitId)
-                                && isActiveOrScheduled(limit, now)
-                );
+        activeLimitsToRevoke.forEach(limit -> limit.setRevokedDate(now));
 
-        if (duplicateExists) {
-            throw new ComplianceLimitExistsException(playerId, type, period);
+        gamblingLimitRepository.saveAll(activeLimitsToRevoke);
+    }
+
+    private boolean isCurrentlyActive(GamblingLimit limit, OffsetDateTime now) {
+        return isCurrentlyActive(
+            limit.getStartDate(),
+            limit.getEndDate(),
+            limit.getRevokedDate(),
+            now
+        );
+    }
+
+    private boolean isCurrentlyActive(
+        OffsetDateTime startDate,
+        OffsetDateTime endDate,
+        OffsetDateTime revokedDate,
+        OffsetDateTime now
+    ) {
+        boolean started = startDate != null && !startDate.isAfter(now);
+        boolean notExpired = endDate == null || endDate.isAfter(now);
+        boolean notRevoked = revokedDate == null;
+
+        return started && notExpired && notRevoked;
+    }
+
+    private void validateCreateRequest(CreateGamblingLimitDTO request) {
+        if (request.type() == null) {
+            throw new InvalidComplianceLimitException("Limit type is required.");
+        }
+
+        if (request.period() == null) {
+            throw new InvalidComplianceLimitException("Limit period is required.");
+        }
+
+        validateAmount(request.amount());
+        validateDateRange(request.startDate(), request.endDate());
+    }
+
+    private void validateAmount(Integer amount) {
+        if (amount == null || amount <= 0) {
+            throw new InvalidComplianceLimitException("Limit amount must be greater than zero.");
         }
     }
 
-    private boolean isActiveOrScheduled(GamblingLimit limit, OffsetDateTime now) {
-        boolean notRevoked = limit.getRevokedDate() == null;
-        boolean notExpired = limit.getEndDate() == null || !limit.getEndDate().isBefore(now);
-
-        return notRevoked && notExpired;
-    }
-
     private void validateDateRange(
-            OffsetDateTime startDate,
-            OffsetDateTime endDate
+        OffsetDateTime startDate,
+        OffsetDateTime endDate
     ) {
         if (startDate == null) {
             throw new InvalidComplianceLimitException("Limit start date is required.");
@@ -186,17 +220,17 @@ public class LimitService {
         }
     }
 
-    private ComplianceLimitDto toDto(GamblingLimit limit) {
-        return new ComplianceLimitDto(
-                limit.getLimitId(),
-                limit.getComplianceId(),
-                limit.getType(),
-                limit.getAmount(),
-                limit.getPeriod(),
-                limit.getCreatedDate(),
-                limit.getStartDate(),
-                limit.getEndDate(),
-                limit.getRevokedDate()
+    private GamblingLimitDto toDto(GamblingLimit limit) {
+        return new GamblingLimitDto(
+            limit.getLimitId(),
+            limit.getComplianceProfile().getComplianceId(),
+            limit.getType(),
+            limit.getAmount(),
+            limit.getPeriod(),
+            limit.getCreatedDate(),
+            limit.getStartDate(),
+            limit.getEndDate(),
+            limit.getRevokedDate()
         );
     }
 }

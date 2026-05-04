@@ -1,6 +1,6 @@
-package com.casino.dto;
+package com.casino.dto.profile;
 
-import com.casino.model.ComplianceProfileRiskLevel;
+import com.casino.model.profile.ComplianceProfileRiskLevel;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 @Schema(description = "Request body for modifying a compliance profile")

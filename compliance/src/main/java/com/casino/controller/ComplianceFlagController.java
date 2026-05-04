@@ -1,9 +1,9 @@
 package com.casino.controller;
 
 import com.casino.api.ComplianceFlagApi;
-import com.casino.dto.ComplianceFlagDto;
-import com.casino.dto.CreateComplianceFlagDTO;
-import com.casino.dto.ModifyComplianceFlagDTO;
+import com.casino.dto.flag.ComplianceFlagDto;
+import com.casino.dto.flag.CreateComplianceFlagDTO;
+import com.casino.dto.flag.ModifyComplianceFlagDTO;
 import com.casino.service.FlagService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;

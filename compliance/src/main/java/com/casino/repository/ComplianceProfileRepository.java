@@ -1,7 +1,7 @@
 package com.casino.repository;
 
 
-import com.casino.model.ComplianceProfile;
+import com.casino.model.profile.ComplianceProfile;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
@@ -13,5 +13,4 @@ public interface ComplianceProfileRepository extends JpaRepository<CompliancePro
 
     Optional<ComplianceProfile> findFirstByPlayerProfileId(Long playerProfileId);
 
-    Optional<ComplianceProfile> findByPlayerId(Long playerId);
 }
