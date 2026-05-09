@@ -20,6 +20,7 @@
         <!-- <module>user-service</module> -->
         <module>profile-service</module>
         <module>auth-service</module>
+        <module>payment</module>
         <!-- <module>wallet-service</module> -->
     </modules>
 
