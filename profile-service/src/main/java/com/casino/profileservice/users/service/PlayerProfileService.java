@@ -14,6 +14,7 @@ import com.casino.profileservice.users.model.ContactDetails;
 import com.casino.profileservice.users.model.PlayerProfile;
 import com.casino.profileservice.users.model.Preferences;
 import com.casino.profileservice.users.repository.PlayerProfileRepository;
+import com.casino.profileservice.integration.AuthAccountClient;
 
 import org.springframework.http.HttpStatus;
 
@@ -22,7 +23,11 @@ public class PlayerProfileService {
     @Autowired
     private PlayerProfileRepository playerProfileRepository;
 
-    public PlayerProfileResponse createProfile(PlayerProfileRequest request) {
+    @Autowired
+    private AuthAccountClient authAccountClient;
+
+    public PlayerProfileResponse createProfile(PlayerProfileRequest request, String authorizationHeader) {
+        authAccountClient.verifyAccountExists(request.getAccountId(), authorizationHeader);
         if (playerProfileRepository.existsByAccountId(request.getAccountId())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "Profile already exists for accountId: " + request.getAccountId());

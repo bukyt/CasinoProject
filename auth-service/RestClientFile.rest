@@ -6,7 +6,7 @@ POST {{host}}/auth/register
 Content-Type: application/json
 
 {
-  "username": "player12",
+  "username": "player14e",
   "password": "secret12"
 }
 
@@ -15,7 +15,7 @@ POST {{host}}/auth/login
 Content-Type: application/json
 
 {
-  "username": "player1",
+  "username": "player14e",
   "password": "secret12"
 }
 
@@ -29,8 +29,7 @@ Content-Type: application/json
 }
 
 ### Current account (replace TOKEN)
-@token = eyJhbGciOiJIUzI1NiJ9.eyJhY2NvdW50SWQiOiJiNmFiNzIzMS0wNjE0LTQ2NjItOTEzNC1lMTYyZjBjM2MyODUiLCJyb2xlcyI6IlBMQVlFUiIsImp0aSI6ImJkN2I5MTA5LTUxNWItNGMxZi04OTQ0LTNlMmM2MjUxNTlhZCIsInN1YiI6InBsYXllcjEiLCJpYXQiOjE3Nzc4OTQ1NjIsImV4cCI6MTc3Nzg5ODE2Mn0.vHDexHEYzIi2igYzRVRqZs4rSZUjAxjF4cniQzXC-oA
-
+@token =eyJhbGciOiJIUzI1NiJ9.eyJhY2NvdW50SWQiOiJhMWIwYjU2ZC03NjkzLTRmNzUtYjQyZC0xMTM4Y2ZhNWY4MjQiLCJyb2xlcyI6IkFETUlOLFBMQVlFUiIsImp0aSI6ImQxMDhjMzZmLTBjOGYtNGI4Yy1hYTEyLWQxMTFhOWZhMmQ1OCIsInN1YiI6ImFkbWluIiwiaWF0IjoxNzc4NDA3MTkwLCJleHAiOjE3Nzg0MTA3OTB9.Igj71TlVLBw-dV4DXg39q84fgLiqb6JJyFuK6L5RmKI
 GET {{host}}/auth/me
 Authorization: Bearer {{token}}
 
@@ -43,9 +42,10 @@ GET {{host}}/auth/accounts/a1b0b56d-7693-4f75-b42d-1138cfa5f824
 Authorization: Bearer {{token}}
 
 ### Update account status — ADMIN only
-PATCH {{host}}/auth/accounts/b6ab7231-0614-4662-9134-e162f0c3c285/status
+### Blank line below headers is required — otherwise `{` is parsed as a header name.
+PATCH {{host}}/auth/accounts/48c10410-8193-49c7-92b8-33ac1c405d11/status
 Content-Type: application/json
-Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJhY2NvdW50SWQiOiJhMWIwYjU2ZC03NjkzLTRmNzUtYjQyZC0xMTM4Y2ZhNWY4MjQiLCJyb2xlcyI6IkFETUlOLFBMQVlFUiIsImp0aSI6IjA3OTM0ZDJkLTNkZmMtNGYyMS1iZDU4LWNlMTg1NGI3ZTc4OSIsInN1YiI6ImFkbWluIiwiaWF0IjoxNzc3ODk0NzI0LCJleHAiOjE3Nzc4OTgzMjR9.vbnimVP2S63_GUChVxgI6FISlSD53u0r2IskoOQeSTg
+Authorization: Bearer {{token}}
 
 {
   "status": "SUSPENDED"

@@ -44,7 +44,7 @@ public class AuthService {
     @Transactional
     public AuthResponse register(RegisterRequest request) {
         if (accountRepository.existsByUsername(request.getUsername())) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Username already registered");
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "An account with this username already exists");
         }
         String accountId = UUID.randomUUID().toString();
         Instant now = Instant.now();

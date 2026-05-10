@@ -1,5 +1,7 @@
+import { getToken } from '../auth.js';
+
 /**
- * Profile service (no JWT on backend in current setup).
+ * Profile service: POST /profiles forwards Bearer JWT so profile-service can verify the account via auth-service.
  * Uses accountId from auth JWT — must match the logged-in account.
  *
  * Lookup uses `/api/profile-by-account/:id` so the Vite dev/preview server can map
@@ -16,9 +18,14 @@ export async function fetchProfileByAccountId(accountId) {
 }
 
 export async function createPlayerProfile(payload) {
+  const token = getToken();
+  const headers = { 'Content-Type': 'application/json' };
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
   const res = await fetch('/profiles', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify(payload),
   });
   if (!res.ok) {
