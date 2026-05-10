@@ -13,6 +13,11 @@ public class BonusController {
     private final Map<String, Bonus> bonuses = new HashMap<>();
     private final Map<String, List<PlayerBonus>> playerBonuses = new HashMap<>();
     private final AtomicLong bonusIdCounter = new AtomicLong(1);
+    private final BonusEventConsumer consumer;
+
+    public BonusController(BonusEventConsumer consumer) {
+        this.consumer = consumer;
+    }
 
     // CREATE BONUS
     @PostMapping
@@ -68,6 +73,16 @@ public class BonusController {
     @GetMapping("/players/{playerId}")
     public ResponseEntity<List<PlayerBonus>> listPlayerBonuses(@PathVariable String playerId) {
         return ResponseEntity.ok(playerBonuses.getOrDefault(playerId, new ArrayList<>()));
+    }
+
+    // GET PLAYER BONUS CREDITS
+    @GetMapping("/players/{playerId}/credits")
+    public ResponseEntity<Double> getPlayerCredits(
+            @PathVariable Integer playerId
+    ) {
+        return ResponseEntity.ok(
+                consumer.getPlayerCredits(playerId)
+        );
     }
 
     // ---- REQUEST DTOs ----
