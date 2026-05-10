@@ -6,6 +6,8 @@ import HomeView from '../views/HomeView.vue';
 import LoginView from '../views/LoginView.vue';
 import RegisterView from '../views/RegisterView.vue';
 import CreateProfileView from '../views/CreateProfileView.vue';
+import GamesView from '../views/GamesView.vue';
+import GameView from '../views/GameView.vue';
 
 const routes = [
   {
@@ -14,6 +16,22 @@ const routes = [
     component: HomeView,
     meta: { requiresAuth: true, requiresProfile: true },
   },
+  {
+    path: '/games',
+    name: 'Games',
+    component: GamesView,
+    meta: { requiresAuth: true, requiresProfile: true },
+  },
+
+  // 🔥 FIX: include playerId in route
+  {
+    path: '/game/:sessionId/:playerId',
+    name: 'Game',
+    component: GameView,
+    meta: { requiresAuth: true, requiresProfile: true },
+    props: true,
+  },
+
   {
     path: '/complete-profile',
     name: 'CompleteProfile',
