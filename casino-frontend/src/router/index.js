@@ -6,6 +6,7 @@ import HomeView from '../views/HomeView.vue';
 import LoginView from '../views/LoginView.vue';
 import RegisterView from '../views/RegisterView.vue';
 import CreateProfileView from '../views/CreateProfileView.vue';
+import BonusGameView from '../views/BonusGameView.vue';
 
 const routes = [
   {
@@ -19,6 +20,12 @@ const routes = [
     name: 'CompleteProfile',
     component: CreateProfileView,
     meta: { requiresAuth: true, requiresProfile: false },
+  },
+  {
+    path: '/bonus-game',
+    name: 'BonusGame',
+    component: BonusGameView,
+    meta: { requiresAuth: true, requiresProfile: true },
   },
   {
     path: '/login',
