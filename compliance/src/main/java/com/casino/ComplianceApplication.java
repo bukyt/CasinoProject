@@ -1,0 +1,13 @@
+package com.casino;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class ComplianceApplication {
+    public static void main(String[] args) {
+        DatabaseInitializer.initialize("compliance_db");
+        SpringApplication.run(ComplianceApplication.class, args);
+    }
+
+}

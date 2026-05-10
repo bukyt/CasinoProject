@@ -1,16 +1,18 @@
 package com.casino.game;
 
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
+@Entity
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class Game {
+    @Id
     private String id;
     private String name;
     private String description;
-
-    public Game(String id, String name, String description) {
-        this.id = id;
-        this.name = name;
-        this.description = description;
-    }
 }
