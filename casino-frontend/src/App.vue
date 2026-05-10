@@ -24,7 +24,6 @@ async function logout() {
       <span class="brand">Casino Player</span>
       <nav v-if="authed" class="nav-links">
         <RouterLink to="/">Home</RouterLink>
-        <RouterLink to="/bonus-game" class="nav-bonus">🎰 Free Roll</RouterLink>
         <button type="button" class="btn ghost" @click="logout">Logout</button>
       </nav>
       <nav v-else class="nav-links">

@@ -32,3 +32,6 @@ Content-Type: application/json
 
 ### List Player Bonuses
 GET http://localhost:8083/bonuses/players/player-1
+
+### Frontend API Tests
+POST http://localhost:8084/bonuses/bonus-1/assign

@@ -8,7 +8,6 @@ import org.springframework.kafka.test.context.EmbeddedKafka;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
 import java.math.BigDecimal;
-import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -24,21 +23,24 @@ class BonusIntegrationTest {
 
     @Test
     void endToEndBonusFlow() throws Exception {
+        // Use the same UUID format your frontend is sending
+        String playerId = "85ffa295-8d61-47fd-844f-7b8add99aa38";
 
-        // 1. send bet events
+        // 1. Send bet event via Kafka
         BetPlaced event = new BetPlaced();
-        event.setPlayerProfileId(1);
+        event.setPlayerProfileId(playerId); // Now accepts String
         event.setAmount(BigDecimal.valueOf(50));
 
         kafkaTemplate.send("betplaced", event);
 
-        Thread.sleep(1000); // allow async consumer processing
+        // Allow time for the @KafkaListener in BonusEventConsumer to process
+        Thread.sleep(1500); 
 
-        // 2. check credits via REST
+        // 2. Check credits via REST API
         Double credits = client.get()
-                .uri("/bonuses/players/1/credits")
+                .uri("/bonuses/players/" + playerId + "/credits")
                 .exchange()
-                .expectStatus().isOk()
+                .expectStatus().isOk() // This would fail with 400 if we sent an Integer
                 .expectBody(Double.class)
                 .returnResult()
                 .getResponseBody();

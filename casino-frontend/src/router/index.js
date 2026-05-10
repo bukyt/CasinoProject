@@ -6,7 +6,9 @@ import HomeView from '../views/HomeView.vue';
 import LoginView from '../views/LoginView.vue';
 import RegisterView from '../views/RegisterView.vue';
 import CreateProfileView from '../views/CreateProfileView.vue';
-import BonusGameView from '../views/BonusGameView.vue';
+// Import the new views you created
+import GamesView from '../views/GamesView.vue'; 
+import GameView from '../views/GameView.vue';
 
 const routes = [
   {
@@ -15,17 +17,25 @@ const routes = [
     component: HomeView,
     meta: { requiresAuth: true, requiresProfile: true },
   },
+  // Add the Games Selection route
+  {
+    path: '/games',
+    name: 'Games',
+    component: GamesView,
+    meta: { requiresAuth: true, requiresProfile: true },
+  },
+  // Add the Active Game route with a parameter for sessionId
+  {
+    path: '/game/:sessionId',
+    name: 'Game',
+    component: GameView,
+    meta: { requiresAuth: true, requiresProfile: true },
+  },
   {
     path: '/complete-profile',
     name: 'CompleteProfile',
     component: CreateProfileView,
     meta: { requiresAuth: true, requiresProfile: false },
-  },
-  {
-    path: '/bonus-game',
-    name: 'BonusGame',
-    component: BonusGameView,
-    meta: { requiresAuth: true, requiresProfile: true },
   },
   {
     path: '/login',

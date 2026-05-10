@@ -9,6 +9,7 @@ import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
@@ -24,10 +25,14 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class PlayerProfile {
     @Id
-    private String playerProfileId;
+    @GeneratedValue(strategy = jakarta.persistence.GenerationType.IDENTITY)
+    private Long id; // This is the Integer (1, 2, 3...) we need
+
+    @Column(name = "player_profile_id", nullable = false, unique = true)
+    private String playerProfileId; // This is the UUID String
 
     @Column(nullable = false, unique = true)
-    private String accountId;
+    private String accountId; // Auth UUID
 
     @Column(nullable = false)
     private String fullName;

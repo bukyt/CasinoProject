@@ -66,7 +66,7 @@ public class GameService {
             System.err.println("KAFKA ERROR: Could not send BetPlaced event, but continuing game.");
         }
 
-        boolean win = new Random().nextBoolean();
+        boolean win = new Random().nextDouble() < 0.3;
 
         double payout = 0;
 

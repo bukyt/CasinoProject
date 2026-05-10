@@ -9,15 +9,10 @@ function authHeaders() {
 
 /**
  * POST /games/sessions
- * Creates a new game session. For a free roll, pass initialBalance = 10
- * (represents the bonus credit value for this spin).
- *
- * @param {string} gameId         - e.g. "bonus-roll"
- * @param {number} initialBalance - balance for the session (10 per free roll)
- * @param {number} playerProfileId
- * @returns {Promise<GameSession>} - { id, gameId, playerProfileId, balance, status, bets: [] }
+ * Creates a new game session.
  */
-export async function createGameSession(gameId, initialBalance, playerProfileId) {
+export async function createGameSession({ gameId, initialBalance, playerProfileId }) {
+  // Added leading slash to ensure it hits http://localhost:5173/games (proxy root)
   const res = await fetch('/games/sessions', {
     method: 'POST',
     headers: authHeaders(),
@@ -32,13 +27,9 @@ export async function createGameSession(gameId, initialBalance, playerProfileId)
 
 /**
  * POST /games/sessions/{sessionId}/bets
- * Places a bet in the session. Game service decides WIN/LOSE randomly.
- *
- * @param {string} sessionId
- * @param {number} amount     - must be <= session balance
- * @returns {Promise<Bet>}    - { id, amount, payout, outcome: "WIN"|"LOSE" }
  */
 export async function placeBet(sessionId, amount) {
+  // Ensure the URL is absolute relative to the domain root
   const res = await fetch(`/games/sessions/${encodeURIComponent(sessionId)}/bets`, {
     method: 'POST',
     headers: authHeaders(),
@@ -53,10 +44,6 @@ export async function placeBet(sessionId, amount) {
 
 /**
  * PATCH /games/sessions/{sessionId}/close
- * Closes the session after the free roll is done.
- *
- * @param {string} sessionId
- * @returns {Promise<GameSession>}
  */
 export async function closeGameSession(sessionId) {
   const res = await fetch(`/games/sessions/${encodeURIComponent(sessionId)}/close`, {
@@ -66,6 +53,21 @@ export async function closeGameSession(sessionId) {
   if (!res.ok) {
     const text = await res.text();
     throw new Error(text || `Close session HTTP ${res.status}`);
+  }
+  return res.json();
+}
+
+/**
+ * GET /games
+ * Returns a list of available games.
+ */
+export async function fetchGames() {
+  const res = await fetch('/games', {
+    headers: authHeaders(),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(text || `Fetch games HTTP ${res.status}`);
   }
   return res.json();
 }

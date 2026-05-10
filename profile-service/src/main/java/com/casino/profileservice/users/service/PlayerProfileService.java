@@ -127,6 +127,7 @@ public class PlayerProfileService {
 
     private PlayerProfileResponse mapToDto(PlayerProfile profile) {
         return PlayerProfileResponse.builder()
+                .id(profile.getId())
                 .playerProfileId(profile.getPlayerProfileId())
                 .accountId(profile.getAccountId())
                 .fullName(profile.getFullName())

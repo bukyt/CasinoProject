@@ -28,7 +28,8 @@ function createProfileLookupMiddleware() {
       if (!rest || rest.includes('/')) return next();
 
       const accountId = decodeURIComponent(rest);
-      const target    = `${PROFILE_SERVICE}/profiles/account/${encodeURIComponent(accountId)}${search}`;
+      console.log(`Proxying Profile Lookup for ${accountId} to ${PROFILE_SERVICE}`);
+      const target = `${PROFILE_SERVICE}/profiles/account/${encodeURIComponent(accountId)}${search}`.replace('localhost', '127.0.0.1');
       const r         = await fetch(target, { method: 'GET', headers: { accept: 'application/json' } });
 
       if (r.status === 404) {
@@ -70,6 +71,10 @@ const proxy = {
   },
   '/games': {
     target: 'http://localhost:8082',
+    changeOrigin: true,
+  },
+  '/ledger': {
+    target: 'http://localhost:8083',
     changeOrigin: true,
   },
 };

@@ -3,15 +3,15 @@ package com.casino.bonus;
 import java.math.BigDecimal;
 
 public class BetPlaced {
-
-    private Integer playerProfileId;
+    // CHANGE: Integer to String
+    private String playerProfileId; 
     private BigDecimal amount;
 
-    public Integer getPlayerProfileId() {
+    public String getPlayerProfileId() {
         return playerProfileId;
     }
 
-    public void setPlayerProfileId(Integer playerProfileId) {
+    public void setPlayerProfileId(String playerProfileId) {
         this.playerProfileId = playerProfileId;
     }
 
