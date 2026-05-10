@@ -66,6 +66,12 @@
             <scope>test</scope>
         </dependency>
 
+         <!-- Common module -->
+        <dependency>
+            <groupId>com.casino</groupId>
+            <artifactId>common</artifactId>
+            <version>1.0.0</version>
+        </dependency>
     </dependencies>
 
     <dependencyManagement>

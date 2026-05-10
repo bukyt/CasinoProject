@@ -7,6 +7,8 @@ import java.util.Random;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.http.HttpMethod;
 
 import com.casino.event.BetPlaced;
 import com.casino.event.BetSettled;
@@ -18,11 +20,19 @@ public class GameService {
     private final GameSessionRepository repository;
     private final GameEventProducer eventProducer;
     private final GameRepository gameRepository;
+    private final RestTemplate restTemplate;
+    private final Random random = new Random();
 
-    public GameService(GameSessionRepository repository, GameEventProducer eventProducer, GameRepository gameRepository) {
+    public GameService(
+            GameSessionRepository repository,
+            GameEventProducer eventProducer,
+            GameRepository gameRepository,
+            RestTemplate restTemplate
+    ) {
         this.repository = repository;
         this.eventProducer = eventProducer;
         this.gameRepository = gameRepository;
+        this.restTemplate = restTemplate;
     }
 
     public GameSession createSession(String id, String gameId, double balance, Integer playerProfileId) {
@@ -40,9 +50,9 @@ public class GameService {
     }
 
     public List<Game> listGames() {
-        return gameRepository.findAll();  // now fetched from DB
+        return gameRepository.findAll();
     }
-    
+
     @Transactional
     public Bet placeBet(String sessionId, double amount) {
 
@@ -53,50 +63,139 @@ public class GameService {
             throw new RuntimeException("Session closed");
         }
 
+        // IMPORTANT: normalize type for bonus service
+        String playerId = String.valueOf(session.getPlayerProfileId());
+
+        //
+        // CHECK BONUS
+        //
+        Boolean hasBonus = false;
+
+        try {
+            hasBonus = restTemplate.getForObject(
+                    "http://localhost:8084/bonuses/players/" +
+                            playerId +
+                            "/has-active-bonus",
+                    Boolean.class
+            );
+        } catch (Exception e) {
+            System.err.println("BONUS CHECK FAILED (continuing game)");
+        }
+
+        boolean freeSpin = Boolean.TRUE.equals(hasBonus);
+
+        //
+        // CONSUME BONUS
+        //
+        if (freeSpin) {
+            try {
+                restTemplate.exchange(
+                        "http://localhost:8084/bonuses/players/" +
+                                playerId +
+                                "/consume",
+                        HttpMethod.PATCH,
+                        null,
+                        Object.class
+                );
+
+                amount = 0;
+
+                System.out.println("FREE SPIN USED");
+
+            } catch (Exception e) {
+                System.err.println("BONUS CONSUME FAILED (ignored)");
+            }
+        }
+
+        //
+        // BALANCE CHECK
+        //
         if (session.getBalance() < amount) {
             throw new RuntimeException("Insufficient funds");
         }
 
-        try {
-            BetPlaced placed = new BetPlaced();
-            placed.setPlayerProfileId(session.getPlayerProfileId());
-            placed.setAmount(BigDecimal.valueOf(amount));
-            eventProducer.sendBetPlaced(placed);
-        } catch (Exception e) {
-            System.err.println("KAFKA ERROR: Could not send BetPlaced event, but continuing game.");
+        //
+        // RANDOM BONUS (20%)
+        //
+        if (random.nextInt(5) == 0) {
+            try {
+                restTemplate.postForObject(
+                        "http://localhost:8084/bonuses/players/" +
+                                playerId +
+                                "/grant-free-spin",
+                        null,
+                        Object.class
+                );
+
+                System.out.println("FREE SPIN AWARDED");
+                System.out.println(playerId.toString());
+
+            } catch (Exception e) {
+                System.err.println("BONUS GRANT FAILED");
+            }
         }
 
-        boolean win = new Random().nextDouble() < 0.3;
+        //
+        // KAFKA: BET PLACED
+        //
+        try {
+            BetPlaced placed = new BetPlaced();
+            placed.setPlayerProfileId(Integer.valueOf(playerId));
+            placed.setAmount(BigDecimal.valueOf(amount));
+            eventProducer.sendBetPlaced(placed);
+
+        } catch (Exception e) {
+            System.err.println("KAFKA ERROR (BetPlaced)");
+        }
+
+        //
+        // GAME LOGIC
+        //
+        boolean win = random.nextDouble() < 0.3;
 
         double payout = 0;
 
         if (win) {
             payout = amount * 2;
-            session.setBalance(session.getBalance() + payout - amount);
+
+            session.setBalance(
+                    session.getBalance() + payout - amount
+            );
         } else {
-            session.setBalance(session.getBalance() - amount);
+            session.setBalance(
+                    session.getBalance() - amount
+            );
         }
 
+        //
+        // BET ENTITY
+        //
         Bet bet = new Bet();
         bet.setAmount(BigDecimal.valueOf(amount));
         bet.setPayout(BigDecimal.valueOf(payout));
         bet.setOutcome(win ? GameEndingType.WIN : GameEndingType.LOSE);
-        // ADD THIS LINE if Bet has a gameSession field:
-        // bet.setGameSession(session); 
+
         session.getBets().add(bet);
+
+        //
+        // KAFKA: SETTLED
+        //
         try {
             BetSettled settled = new BetSettled();
-            settled.setPlayerProfileId(session.getPlayerProfileId());
-            // FIX: Convert double to BigDecimal
+            settled.setPlayerProfileId(Integer.valueOf(playerId));
             settled.setAmount(BigDecimal.valueOf(amount));
-            settled.setGameEndingType(win ? GameEndingType.WIN : GameEndingType.LOSE);
+            settled.setGameEndingType(
+                    win ? GameEndingType.WIN : GameEndingType.LOSE
+            );
+
             eventProducer.sendBetSettled(settled);
+
         } catch (Exception e) {
-            System.err.println("KAFKA OFFLINE: Skipping BetSettled event.");
+            System.err.println("KAFKA ERROR (BetSettled)");
         }
+
         repository.save(session);
 
-        // 2. Return the 'bet' object to satisfy the method's return type
         return bet;
     }
 

@@ -67,7 +67,7 @@ const createSession = async (gameId) => {
     const sid = session.id || session.sessionId || (typeof session === 'string' ? session : null);
 
     if (sid) {
-      router.push(`/game/${sid}`);
+      router.push(`/game/${sid}/${playerId.value}`);
     } else {
       console.error("Could not find ID in session response", session);
       alert("Error: Backend did not return a valid Session ID");

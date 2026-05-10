@@ -8,7 +8,11 @@ import java.util.concurrent.atomic.AtomicLong;
 
 @RestController
 @RequestMapping("/bonuses")
-@CrossOrigin(origins = "http://localhost:5173", allowedHeaders = "*", methods = {RequestMethod.GET, RequestMethod.POST})
+@CrossOrigin(
+        origins = "http://localhost:5173",
+        allowedHeaders = "*",
+        methods = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PATCH}
+)
 public class BonusController {
 
     private final Map<String, Bonus> bonuses = new HashMap<>();
@@ -20,22 +24,29 @@ public class BonusController {
         this.consumer = consumer;
     }
 
-    // CREATE BONUS
+    // ---------------- CREATE BONUS ----------------
     @PostMapping
     public ResponseEntity<Bonus> createBonus(@RequestBody CreateBonusRequest request) {
         String id = "bonus-" + bonusIdCounter.getAndIncrement();
-        Bonus bonus = new Bonus(id, request.getName(), request.getDescription(), request.getWageringRequirement());
+
+        Bonus bonus = new Bonus(
+                id,
+                request.getName(),
+                request.getDescription(),
+                request.getWageringRequirement()
+        );
+
         bonuses.put(id, bonus);
         return ResponseEntity.ok(bonus);
     }
 
-    // LIST ALL DEFINED BONUSES
+    // ---------------- LIST BONUSES ----------------
     @GetMapping
     public ResponseEntity<List<Bonus>> listBonuses() {
         return ResponseEntity.ok(new ArrayList<>(bonuses.values()));
     }
 
-    // GET SPECIFIC BONUS DEFINITION
+    // ---------------- GET BONUS ----------------
     @GetMapping("/{id}")
     public ResponseEntity<Bonus> getBonus(@PathVariable String id) {
         Bonus bonus = bonuses.get(id);
@@ -43,7 +54,7 @@ public class BonusController {
         return ResponseEntity.ok(bonus);
     }
 
-    // ASSIGN A BONUS TO A PLAYER
+    // ---------------- ASSIGN BONUS ----------------
     @PostMapping("/{id}/assign")
     public ResponseEntity<PlayerBonus> assignBonus(
             @PathVariable String id,
@@ -60,54 +71,108 @@ public class BonusController {
                 "active"
         );
 
-        playerBonuses.computeIfAbsent(request.getPlayerId(), k -> new ArrayList<>()).add(pb);
+        playerBonuses
+                .computeIfAbsent(request.getPlayerId(), k -> new ArrayList<>())
+                .add(pb);
+
         return ResponseEntity.ok(pb);
     }
 
-    // LIST BONUSES ASSIGNED TO A SPECIFIC PLAYER
+    // ---------------- PLAYER BONUSES ----------------
     @GetMapping("/players/{playerId}")
     public ResponseEntity<List<PlayerBonus>> listPlayerBonuses(@PathVariable String playerId) {
-        return ResponseEntity.ok(playerBonuses.getOrDefault(playerId, new ArrayList<>()));
+
+        return ResponseEntity.ok(
+                playerBonuses.computeIfAbsent(playerId, k -> new ArrayList<>())
+        );
     }
 
-    // GET PLAYER CREDIT BALANCE (Wrapped in Map for proper JSON content-type)
-    @GetMapping("/players/{playerId}/credits")
-    public ResponseEntity<Map<String, Double>> getPlayerCredits(@PathVariable String playerId) {
-        Map<String, Double> response = new HashMap<>();
-        response.put("balance", consumer.getPlayerCredits(playerId));
-        return ResponseEntity.ok(response);
+    // ---------------- HAS ACTIVE BONUS ----------------
+    @GetMapping("/players/{playerId}/has-active-bonus")
+    public ResponseEntity<Boolean> hasActiveBonus(@PathVariable String playerId) {
+
+        List<PlayerBonus> bonuses =
+            playerBonuses.computeIfAbsent(playerId, k -> new ArrayList<>());
+
+        boolean active = bonuses.stream()
+                .anyMatch(b -> "active".equals(b.getStatus()));
+
+        return ResponseEntity.ok(active);
     }
 
-    // DEBUG ADD CREDITS
-    @PostMapping("/players/{playerId}/debug-add")
-    public ResponseEntity<Map<String, Double>> debugAddCredits(
-            @PathVariable String playerId, 
-            @RequestBody Map<String, Double> payload) {
-        
-        Double amount = payload.getOrDefault("amount", 10.0);
-        consumer.addDebugCredits(playerId, amount);
-        
-        Map<String, Double> response = new HashMap<>();
-        response.put("balance", consumer.getPlayerCredits(playerId));
-        return ResponseEntity.ok(response);
+    // ---------------- CONSUME BONUS (FIXED) ----------------
+    @PatchMapping("/players/{playerId}/consume")
+    public ResponseEntity<?> consumeBonus(@PathVariable String playerId) {
+
+        List<PlayerBonus> list = playerBonuses.get(playerId);
+
+        if (list == null || list.isEmpty()) {
+            return ResponseEntity.status(404).body("No bonuses found");
+        }
+
+        for (PlayerBonus bonus : list) {
+            if ("active".equals(bonus.getStatus())) {
+                bonus.setStatus("used");
+                return ResponseEntity.ok(bonus);
+            }
+        }
+
+        return ResponseEntity.status(404).body("No active bonus");
     }
 
-    // ---- DTOs ----
+    // ---------------- GRANT FREE SPIN (FIXED NO DUPLICATES) ----------------
+    @PostMapping("/players/{playerId}/grant-free-spin")
+    public ResponseEntity<PlayerBonus> grantFreeSpin(@PathVariable String playerId) {
+
+        List<PlayerBonus> list =
+                playerBonuses.computeIfAbsent(playerId, k -> new ArrayList<>());
+
+        // prevent duplicate active free spins
+        boolean alreadyActive = list.stream()
+                .anyMatch(b -> "active".equals(b.getStatus())
+                        && "free-spin".equals(b.getBonusId()));
+
+        if (alreadyActive) {
+            return ResponseEntity.status(409).build();
+        }
+
+        PlayerBonus pb = new PlayerBonus(
+                playerId,
+                "free-spin",
+                0,
+                0,
+                "active"
+        );
+
+        list.add(pb);
+
+        return ResponseEntity.ok(pb);
+    }
+
+    // ---------------- DTOs ----------------
     public static class CreateBonusRequest {
         private String name;
         private String description;
         private double wageringRequirement;
+
         public String getName() { return name; }
         public void setName(String name) { this.name = name; }
+
         public String getDescription() { return description; }
         public void setDescription(String description) { this.description = description; }
+
         public double getWageringRequirement() { return wageringRequirement; }
-        public void setWageringRequirement(double wageringRequirement) { this.wageringRequirement = wageringRequirement; }
+        public void setWageringRequirement(double wageringRequirement) {
+            this.wageringRequirement = wageringRequirement;
+        }
     }
 
     public static class AssignBonusRequest {
         private String playerId;
+
         public String getPlayerId() { return playerId; }
-        public void setPlayerId(String playerId) { this.playerId = playerId; }
+        public void setPlayerId(String playerId) {
+            this.playerId = playerId;
+        }
     }
 }

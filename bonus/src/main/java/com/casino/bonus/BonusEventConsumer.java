@@ -17,6 +17,7 @@ public class BonusEventConsumer {
         // --- SAFETY CHECK (Prevents NullPointerException) ---
         if (event == null || event.getAmount() == null || event.getPlayerProfileId() == null) {
             System.err.println("RECEIVED NULL DATA: Skipping malformed bet event.");
+            System.err.println("Event data: " + event);
             return; 
         }
         // ----------------------------------------------------
