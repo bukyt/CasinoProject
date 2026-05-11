@@ -1,74 +1,71 @@
 package com.casino.bonus;
 
-
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+
 
 class BonusEventConsumerTest {
 
     @Test
     void shouldAwardBonusCreditsEvery50Wagered() {
 
-        BonusEventConsumer consumer = new BonusEventConsumer();
+        BonusEventConsumer consumer = new BonusEventConsumer(new com.fasterxml.jackson.databind.ObjectMapper());
 
-        String playerId = "player-1";
+        Map<String, Object> event = new HashMap<>();
+        event.put("playerProfileId", "player-1");
+        event.put("amount", BigDecimal.valueOf(50));
 
-        BetPlaced event = new BetPlaced();
-        event.setPlayerProfileId(playerId);
-        event.setAmount(BigDecimal.valueOf(50));
+        consumer.process(event);
 
-        consumer.consume(event);
-
-        assertThat(consumer.getPlayerCredits(playerId))
+        assertThat(consumer.getPlayerCredits("player-1"))
                 .isEqualTo(10.0);
     }
 
     @Test
     void shouldAccumulateWageringAcrossMultipleEvents() {
 
-        BonusEventConsumer consumer = new BonusEventConsumer();
-        String playerId = "player-1";
+        BonusEventConsumer consumer = new BonusEventConsumer(new com.fasterxml.jackson.databind.ObjectMapper());
 
         for (int i = 0; i < 5; i++) {
-            BetPlaced event = new BetPlaced();
-            event.setPlayerProfileId(playerId);
-            event.setAmount(BigDecimal.valueOf(10));
+            Map<String, Object> event = new HashMap<>();
+            event.put("playerProfileId", "player-1");
+            event.put("amount", BigDecimal.valueOf(10));
 
-            consumer.consume(event);
+            consumer.process(event);
         }
 
-        assertThat(consumer.getPlayerCredits(playerId))
+        assertThat(consumer.getPlayerCredits("player-1"))
                 .isEqualTo(10.0);
     }
 
     @Test
     void shouldNotAwardCreditsBeforeThreshold() {
 
-        BonusEventConsumer consumer = new BonusEventConsumer();
-        String playerId = "player-1";
+        BonusEventConsumer consumer = new BonusEventConsumer(new com.fasterxml.jackson.databind.ObjectMapper());
 
-        BetPlaced event = new BetPlaced();
-        event.setPlayerProfileId(playerId);
-        event.setAmount(BigDecimal.valueOf(30));
+        Map<String, Object> event = new HashMap<>();
+        event.put("playerProfileId", "player-1");
+        event.put("amount", BigDecimal.valueOf(30));
 
-        consumer.consume(event);
+        consumer.process(event);
 
-        assertThat(consumer.getPlayerCredits(playerId))
+        assertThat(consumer.getPlayerCredits("player-1"))
                 .isEqualTo(0.0);
     }
 
     @Test
     void shouldSupportDebugCreditsManualAddition() {
 
-        BonusEventConsumer consumer = new BonusEventConsumer();
-        String playerId = "player-1";
+        BonusEventConsumer consumer = new BonusEventConsumer(new com.fasterxml.jackson.databind.ObjectMapper());
 
-        consumer.addDebugCredits(playerId, 25.0);
+        consumer.addDebugCredits("player-1", 25.0);
 
-        assertThat(consumer.getPlayerCredits(playerId))
+        assertThat(consumer.getPlayerCredits("player-1"))
                 .isEqualTo(25.0);
     }
 }
