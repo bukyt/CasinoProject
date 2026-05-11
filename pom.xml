@@ -25,7 +25,7 @@
         <!-- <module>user-service</module> -->
         <module>profile-service</module>
         <module>auth-service</module>
-        <!-- <module>wallet-service</module> -->
+        <module>wallet</module>
     </modules>
 
     <dependencyManagement>
