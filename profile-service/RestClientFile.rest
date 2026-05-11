@@ -8,7 +8,7 @@ GET http://localhost:8086/v3/api-docs
 ### Profiles API
 ##############################
 
-@token = eyJhbGciOiJIUzI1NiJ9.eyJhY2NvdW50SWQiOiJhMWIwYjU2ZC03NjkzLTRmNzUtYjQyZC0xMTM4Y2ZhNWY4MjQiLCJyb2xlcyI6IkFETUlOLFBMQVlFUiIsImp0aSI6ImY2YzE2ZTM4LTYzMTItNDg2OC1iZGZlLWQ4ZDcyOTZjMjI3NSIsInN1YiI6ImFkbWluIiwiaWF0IjoxNzc4NTAwOTY1LCJleHAiOjE3Nzg1MDQ1NjV9.1Q9-zkVmR-L6bn6k9pJtDmpGHB1DFNuo_JlAcjaHwxk
+@token = eyJhbGciOiJIUzI1NiJ9.eyJhY2NvdW50SWQiOiJhMWIwYjU2ZC03NjkzLTRmNzUtYjQyZC0xMTM4Y2ZhNWY4MjQiLCJyb2xlcyI6IkFETUlOLFBMQVlFUiIsImp0aSI6IjdkNGZiMjEzLWVlN2ItNDNlNS05NGM5LWQ1ZGE3MzY2NDg0ZSIsInN1YiI6ImFkbWluIiwiaWF0IjoxNzc4NTAzNzQzLCJleHAiOjE3Nzg1MDczNDN9.stkND-6Ysvb1sLEacKahEEImhG_MiYurYtwuJlcJVO0
 
 ### Create player profile
 POST http://localhost:8086/profiles
@@ -16,7 +16,7 @@ content-type: application/json
 Authorization: Bearer {{token}}
 
 {
-  "accountId": "c37779b3-712c-4d21-bf36-a188793261b4",
+  "accountId": "e882205f-03d6-4317-9777-a4380cfea64e",
   "fullName": "Test Player",
   "dateOfBirth": "1999-04-15",
   "status": "ACTIVE",
@@ -47,7 +47,7 @@ content-type: application/json
 }
 
 ### Update contact details
-PATCH http://localhost:8086/profiles/1/contact
+PATCH http://localhost:8086/profiles/7/contact
 content-type: application/json
 
 {
@@ -57,7 +57,7 @@ content-type: application/json
 }
 
 ### Update preferences
-PATCH http://localhost:8086/profiles/1/preferences
+PATCH http://localhost:8086/profiles/7/preferences
 content-type: application/json
 
 {
@@ -65,5 +65,5 @@ content-type: application/json
   "currency": "USD"
 }
 
-### Get profile by account id
+### Get profile by account id (404 if missing — strict REST)
 GET http://localhost:8086/profiles/account/acc-01

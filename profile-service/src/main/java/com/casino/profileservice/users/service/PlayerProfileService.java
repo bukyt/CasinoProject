@@ -1,5 +1,7 @@
 package com.casino.profileservice.users.service;
 
+import java.util.Optional;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -113,9 +115,16 @@ public class PlayerProfileService {
         return mapToDto(playerProfileRepository.save(profile));
     }
 
+    /**
+     * Lookup by auth account id. Empty when no profile row exists.
+     */
+    public Optional<PlayerProfileResponse> findByAccountIdOptional(String accountId) {
+        return playerProfileRepository.findByAccountId(accountId).map(this::mapToDto);
+    }
+
     public PlayerProfileResponse getByAccountId(String accountId) {
-        return mapToDto(playerProfileRepository.findByAccountId(accountId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Profile not found")));
+        return findByAccountIdOptional(accountId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Profile not found"));
     }
 
     private PlayerProfile requireProfile(Integer playerProfileId) {

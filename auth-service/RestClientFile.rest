@@ -6,7 +6,7 @@ POST {{host}}/auth/register
 Content-Type: application/json
 
 {
-  "username": "player14613w",
+  "username": "player146123w",
   "password": "secret12"
 }
 
@@ -29,7 +29,7 @@ Content-Type: application/json
 }
 
 ### Current account (replace TOKEN)
-@token =eyJhbGciOiJIUzI1NiJ9.eyJhY2NvdW50SWQiOiJhMWIwYjU2ZC03NjkzLTRmNzUtYjQyZC0xMTM4Y2ZhNWY4MjQiLCJyb2xlcyI6IkFETUlOLFBMQVlFUiIsImp0aSI6IjU4ZDZkOTRhLTFjZDYtNGMxOC1hYjJhLWFkYmZjZGJjNWNjYyIsInN1YiI6ImFkbWluIiwiaWF0IjoxNzc4NTAxMzI3LCJleHAiOjE3Nzg1MDQ5Mjd9.Zj8-h4srNV5kzmtUJRSqJZ4nBD9ykd5E-lD4MwoESl0
+@token = eyJhbGciOiJIUzI1NiJ9.eyJhY2NvdW50SWQiOiJhMWIwYjU2ZC03NjkzLTRmNzUtYjQyZC0xMTM4Y2ZhNWY4MjQiLCJyb2xlcyI6IkFETUlOLFBMQVlFUiIsImp0aSI6IjdkNGZiMjEzLWVlN2ItNDNlNS05NGM5LWQ1ZGE3MzY2NDg0ZSIsInN1YiI6ImFkbWluIiwiaWF0IjoxNzc4NTAzNzQzLCJleHAiOjE3Nzg1MDczNDN9.stkND-6Ysvb1sLEacKahEEImhG_MiYurYtwuJlcJVO0
 GET {{host}}/auth/me
 Authorization: Bearer {{token}}
 

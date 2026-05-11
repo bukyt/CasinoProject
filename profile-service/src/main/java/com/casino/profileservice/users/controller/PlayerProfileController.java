@@ -9,15 +9,21 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.casino.profileservice.users.dto.ContactDetailsRequest;
 import com.casino.profileservice.users.dto.PlayerProfileRequest;
 import com.casino.profileservice.users.dto.PlayerProfileResponse;
 import com.casino.profileservice.users.dto.PreferencesRequest;
 import com.casino.profileservice.users.service.PlayerProfileService;
+
+import java.util.Optional;
 
 import jakarta.validation.Valid;
 
@@ -56,8 +62,22 @@ public class PlayerProfileController {
         return playerProfileService.updatePreferences(playerProfileId, request);
     }
 
+    /**
+     * GET /profiles/account/{accountId}
+     * <p>Optional query {@code optional=true}: if no profile exists, respond with {@code 204 No Content}
+     * instead of {@code 404} (same resource path as Assignment 3; parameter is additive).</p>
+     */
     @GetMapping("/account/{accountId}")
-    public PlayerProfileResponse getByAccountId(@PathVariable String accountId) {
-        return playerProfileService.getByAccountId(accountId);
+    public ResponseEntity<PlayerProfileResponse> getByAccountId(
+            @PathVariable String accountId,
+            @RequestParam(name = "optional", required = false, defaultValue = "false") boolean optionalLookup) {
+        Optional<PlayerProfileResponse> profile = playerProfileService.findByAccountIdOptional(accountId);
+        if (profile.isPresent()) {
+            return ResponseEntity.ok(profile.get());
+        }
+        if (optionalLookup) {
+            return ResponseEntity.noContent().build();
+        }
+        throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Profile not found");
     }
 }
