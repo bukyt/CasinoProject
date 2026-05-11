@@ -48,52 +48,39 @@ const router = useRouter()
 
 const sessionId = route.params.sessionId || null
 
-// FIX 1: ALWAYS derive playerId from backend-compatible session first
 const playerId = ref(null)
-
 const spinning = ref(false)
 const lastResult = ref(null)
 const credits = ref(0)
 const hasActiveBonus = ref(false)
 
-// FIX 2: safe number formatting
 const formattedCredits = computed(() => {
   return Number(credits.value ?? 0).toFixed(2)
 })
 
-// FIX 3: load session properly to get real playerId
+/**
+ * SINGLE SOURCE OF TRUTH: GAME SESSION
+ */
 const fetchSession = async () => {
   try {
     const res = await fetch(`/games/sessions/${sessionId}`)
     if (!res.ok) return
 
     const data = await res.json()
-    playerId.value = String(data.playerProfileId) // CRITICAL FIX
+
+    playerId.value = String(data.playerProfileId)
+
+    // IMPORTANT: backend must provide these fields
+    credits.value = Number(data.balance ?? 0)
+    hasActiveBonus.value = Boolean(data.hasActiveBonus ?? false)
+
   } catch (e) {
     console.error("Failed to fetch session", e)
   }
 }
 
 const syncState = async () => {
-  if (!playerId.value) return
-
-  try {
-    const cRes = await fetch(`/bonuses/players/${playerId.value}/credits`)
-    if (cRes.ok) {
-      const data = await cRes.json()
-      credits.value = Number(data.balance ?? 0)
-    }
-
-    const bRes = await fetch(`/bonuses/players/${playerId.value}`)
-    if (bRes.ok) {
-      const data = await bRes.json()
-      hasActiveBonus.value =
-        Array.isArray(data) &&
-        data.some(b => b.status === 'active')
-    }
-  } catch (e) {
-    console.error("syncState failed", e)
-  }
+  await fetchSession()
 }
 
 const roll = async () => {
@@ -102,7 +89,6 @@ const roll = async () => {
   spinning.value = true
   lastResult.value = null
 
-  // FIX 4: backend ALWAYS gets real bet (never 0)
   const betAmount = 10.0
 
   try {
@@ -114,10 +100,11 @@ const roll = async () => {
 
     const result = await res.json()
 
-    setTimeout(() => {
+    setTimeout(async () => {
       lastResult.value = result
       spinning.value = false
-      syncState()
+
+      await syncState()
     }, 800)
 
   } catch (err) {
@@ -136,94 +123,6 @@ const exit = async () => {
 }
 
 onMounted(async () => {
-  await fetchSession()
   await syncState()
 })
 </script>
-
-<style scoped>
-.game-view {
-  min-height: 80vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  color: white;
-}
-
-.header {
-  width: 100%;
-  display: flex;
-  justify-content: space-between;
-  padding: 20px;
-  position: absolute;
-  top: 0;
-}
-
-.machine {
-  background: #1a1a1a;
-  padding: 3rem;
-  border-radius: 20px;
-  border: 4px solid #333;
-  text-align: center;
-}
-
-.display {
-  background: #000;
-  height: 120px;
-  width: 250px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 2rem;
-  margin-bottom: 2rem;
-  border-radius: 10px;
-  border: 2px solid #444;
-}
-
-.roll-btn {
-  padding: 1rem 3rem;
-  font-size: 1.2rem;
-  border-radius: 50px;
-  border: none;
-  background: #e91e63;
-  color: white;
-  cursor: pointer;
-}
-
-.roll-btn.free {
-  background: #ff9800;
-  animation: pulse 1s infinite;
-}
-
-.roll-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.outcome.WIN { color: #4caf50; }
-.outcome.LOSE { color: #f44336; }
-
-.exit-btn {
-  background: #333;
-  border: none;
-  color: white;
-  padding: 8px 16px;
-  border-radius: 4px;
-}
-
-.bonus-status {
-  color: #ffeb3b;
-  font-weight: bold;
-}
-
-.footer-stats {
-  margin-top: 20px;
-}
-
-@keyframes pulse {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.05); }
-  100% { transform: scale(1); }
-}
-</style>

@@ -7,8 +7,6 @@ import java.util.Random;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.client.RestTemplate;
-import org.springframework.http.HttpMethod;
 
 import com.casino.event.BetPlaced;
 import com.casino.event.BetSettled;
@@ -20,19 +18,19 @@ public class GameService {
     private final GameSessionRepository repository;
     private final GameEventProducer eventProducer;
     private final GameRepository gameRepository;
-    private final RestTemplate restTemplate;
+    private final BonusClient bonusClient;
     private final Random random = new Random();
 
     public GameService(
             GameSessionRepository repository,
             GameEventProducer eventProducer,
             GameRepository gameRepository,
-            RestTemplate restTemplate
+            BonusClient bonusClient
     ) {
         this.repository = repository;
         this.eventProducer = eventProducer;
         this.gameRepository = gameRepository;
-        this.restTemplate = restTemplate;
+        this.bonusClient = bonusClient;
     }
 
     public GameSession createSession(String id, String gameId, double balance, Integer playerProfileId) {
@@ -46,7 +44,19 @@ public class GameService {
     }
 
     public Optional<GameSession> getSession(String id) {
-        return repository.findById(id);
+        return repository.findById(id).map(this::enrichSession);
+    }
+
+    private GameSession enrichSession(GameSession session) {
+        String playerId = String.valueOf(session.getPlayerProfileId());
+
+        try {
+            session.setHasActiveBonus(bonusClient.hasActiveBonus(playerId));
+        } catch (Exception e) {
+            session.setHasActiveBonus(false);
+        }
+
+        return session;
     }
 
     public List<Game> listGames() {
@@ -63,113 +73,65 @@ public class GameService {
             throw new RuntimeException("Session closed");
         }
 
-        // IMPORTANT: normalize type for bonus service
         String playerId = String.valueOf(session.getPlayerProfileId());
 
-        //
-        // CHECK BONUS
-        //
-        Boolean hasBonus = false;
+        boolean freeSpin = false;
 
         try {
-            hasBonus = restTemplate.getForObject(
-                    "http://localhost:8084/bonuses/players/" +
-                            playerId +
-                            "/has-active-bonus",
-                    Boolean.class
-            );
+            freeSpin = bonusClient.hasActiveBonus(playerId);
         } catch (Exception e) {
             System.err.println("BONUS CHECK FAILED (continuing game)");
         }
 
-        boolean freeSpin = Boolean.TRUE.equals(hasBonus);
-
-        //
-        // CONSUME BONUS
-        //
         if (freeSpin) {
             try {
-                restTemplate.exchange(
-                        "http://localhost:8084/bonuses/players/" +
-                                playerId +
-                                "/consume",
-                        HttpMethod.PATCH,
-                        null,
-                        Object.class
-                );
-
-                amount = 0;
-
+                bonusClient.consumeBonus(playerId);
+                amount = 0.0; // FREE SPIN COST IS ZERO ONLY
                 System.out.println("FREE SPIN USED");
-
             } catch (Exception e) {
-                System.err.println("BONUS CONSUME FAILED (ignored)");
+                System.err.println("BONUS CONSUME FAILED");
             }
         }
 
-        //
-        // BALANCE CHECK
-        //
         if (session.getBalance() < amount) {
             throw new RuntimeException("Insufficient funds");
         }
 
-        //
-        // RANDOM BONUS (20%)
-        //
+        // award free spin randomly
         if (random.nextInt(5) == 0) {
             try {
-                restTemplate.postForObject(
-                        "http://localhost:8084/bonuses/players/" +
-                                playerId +
-                                "/grant-free-spin",
-                        null,
-                        Object.class
-                );
-
+                bonusClient.grantFreeSpin(playerId);
                 System.out.println("FREE SPIN AWARDED");
-                System.out.println(playerId.toString());
-
             } catch (Exception e) {
                 System.err.println("BONUS GRANT FAILED");
             }
         }
 
-        //
-        // KAFKA: BET PLACED
-        //
+        // send bet event
         try {
             BetPlaced placed = new BetPlaced();
             placed.setPlayerProfileId(Integer.valueOf(playerId));
             placed.setAmount(BigDecimal.valueOf(amount));
             eventProducer.sendBetPlaced(placed);
-
         } catch (Exception e) {
             System.err.println("KAFKA ERROR (BetPlaced)");
         }
 
-        //
-        // GAME LOGIC
-        //
         boolean win = random.nextDouble() < 0.3;
 
-        double payout = 0;
+        double payout = 0.0;
 
         if (win) {
-            payout = amount * 2;
+            payout = amount + 10.0; // WINNING PAYS BET + 10 (FIXED PAYOUT FOR SIMPLICITY)
 
-            session.setBalance(
-                    session.getBalance() + payout - amount
-            );
-        } else {
-            session.setBalance(
-                    session.getBalance() - amount
-            );
+            // IMPORTANT FIX: free spin win must still pay real money
+            session.setBalance(session.getBalance() + payout);
         }
 
-        //
-        // BET ENTITY
-        //
+        if (!freeSpin) {
+            session.setBalance(session.getBalance() - amount);
+        }
+
         Bet bet = new Bet();
         bet.setAmount(BigDecimal.valueOf(amount));
         bet.setPayout(BigDecimal.valueOf(payout));
@@ -177,19 +139,12 @@ public class GameService {
 
         session.getBets().add(bet);
 
-        //
-        // KAFKA: SETTLED
-        //
         try {
             BetSettled settled = new BetSettled();
             settled.setPlayerProfileId(Integer.valueOf(playerId));
             settled.setAmount(BigDecimal.valueOf(amount));
-            settled.setGameEndingType(
-                    win ? GameEndingType.WIN : GameEndingType.LOSE
-            );
-
+            settled.setGameEndingType(win ? GameEndingType.WIN : GameEndingType.LOSE);
             eventProducer.sendBetSettled(settled);
-
         } catch (Exception e) {
             System.err.println("KAFKA ERROR (BetSettled)");
         }
@@ -200,9 +155,7 @@ public class GameService {
     }
 
     public GameSession closeSession(String id) {
-        GameSession session = repository.findById(id)
-                .orElseThrow();
-
+        GameSession session = repository.findById(id).orElseThrow();
         session.setStatus("closed");
         return repository.save(session);
     }

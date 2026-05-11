@@ -1,68 +1,89 @@
 package com.casino.bonus;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
 
 @Component
 public class BonusEventConsumer {
 
-    private final Map<String, Double> wageringTracker = new HashMap<>();
-    private final Map<String, Double> bonusCredits = new HashMap<>();
+    private final ObjectMapper objectMapper;
+
+    private final Map<String, Double> wageringTracker = new ConcurrentHashMap<>();
+    private final Map<String, Double> bonusWallet = new ConcurrentHashMap<>();
+    private final CountDownLatch testLatch = new CountDownLatch(1);
+
+    public void awaitProcessing() throws InterruptedException {
+        testLatch.await();
+    }
+
+    public BonusEventConsumer(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
+    }
 
     @KafkaListener(topics = "betplaced", groupId = "bonus-group")
-    public void consume(BetPlaced event) {
-        // --- SAFETY CHECK (Prevents NullPointerException) ---
-        if (event == null || event.getAmount() == null || event.getPlayerProfileId() == null) {
-            System.err.println("RECEIVED NULL DATA: Skipping malformed bet event.");
-            System.err.println("Event data: " + event);
-            return; 
-        }
-        // ----------------------------------------------------
+    public void consume(ConsumerRecord<String, Object> record) {
+        Object value = record.value();
+        Map<String, Object> event;
 
-        String playerId = event.getPlayerProfileId();
-        double amount = event.getAmount().doubleValue();
-        
-        double currentWagered = wageringTracker.getOrDefault(playerId, 0.0);
-        currentWagered += amount;
-        wageringTracker.put(playerId, currentWagered);
-
-        int rewardBlocks = (int) (currentWagered / 50);
-        double expectedCredits = rewardBlocks * 10;
-        
-        // We only award if the calculation gives them more than they currently have
-        // (Note: This logic only tracks milestones, it doesn't handle the session win/loss)
-        double currentCredits = bonusCredits.getOrDefault(playerId, 0.0);
-
-        if (expectedCredits > currentCredits) {
-            bonusCredits.put(playerId, expectedCredits);
-            System.out.println("BONUS AWARDED -> Player " + playerId + " received credits");
-        }
-    }
-
-    public void addDebugCredits(String playerId, Double amount) {
-        bonusCredits.merge(playerId, amount, Double::sum);
-    }
-
-    public Double getPlayerCredits(String playerId) {
-        return bonusCredits.getOrDefault(playerId, 0.0);
-    }
-
-    @KafkaListener(topics = "session-closed", groupId = "bonus-group")
-    public void consumeSessionClosed(Map<String, Object> event) {
-        // Safety check for session closure too
-        if (event.get("playerProfileId") == null || event.get("balance") == null) {
+        try {
+            if (value instanceof Map<?, ?> map) {
+                event = (Map<String, Object>) map;
+            } else {
+                event = objectMapper.convertValue(value, Map.class);
+            }
+        } catch (Exception e) {
+            System.err.println("FAILED TO PARSE EVENT: " + value);
             return;
         }
 
-        String playerId = (String) event.get("playerProfileId");
-        Double finalBalance = Double.valueOf(event.get("balance").toString());
+        process(event);
+    }
 
-        // This effectively "saves" the game session outcome back to the permanent balance
-        bonusCredits.put(playerId, finalBalance);
+    public void process(Map<String, Object> event) {
+        if (event == null) return;
 
-        System.out.println("SESSION SYNC -> Player " + playerId + " new balance: " + finalBalance);
+        String playerId = String.valueOf(event.get("playerProfileId"));
+        double amount = Double.parseDouble(event.get("amount").toString());
+
+        double current = wageringTracker.getOrDefault(playerId, 0.0) + amount;
+        wageringTracker.put(playerId, current);
+
+        int blocks = (int) (current / 50);
+        double expectedBonus = blocks * 10.0;
+
+        double currentBonus = bonusWallet.getOrDefault(playerId, 0.0);
+
+        if (expectedBonus > currentBonus) {
+            bonusWallet.put(playerId, expectedBonus);
+
+            System.out.println("BONUS UPDATED -> " + playerId + " = " + expectedBonus);
+        }
+    }
+
+    public boolean consumeBonus(String playerId, double amount) {
+        double available = bonusWallet.getOrDefault(playerId, 0.0);
+
+        if (available < amount) return false;
+
+        bonusWallet.put(playerId, available - amount);
+        return true;
+    }
+
+    public void addDebugCredits(String playerId, double amount) {
+        bonusWallet.merge(playerId, amount, Double::sum);
+    }
+
+    public Double getPlayerCredits(String playerId) {
+        return bonusWallet.getOrDefault(playerId, 0.0);
+    }
+    
+    public boolean isFreeSpinActive(String playerId) {
+        return false; // REST is source of truth
     }
 }
