@@ -1,25 +1,29 @@
-import { defineConfig } from 'vite';
-import vue from '@vitejs/plugin-vue';
+import { defineConfig } from "vite";
+import vue from "@vitejs/plugin-vue";
 
 const proxy = {
-  '/auth': {
-    target: 'http://localhost:8090',
+  "/auth": {
+    target: "http://localhost:8090",
     changeOrigin: true,
   },
-  '/profiles': {
-    target: 'http://localhost:8086',
+  "/profiles": {
+    target: "http://localhost:8086",
     changeOrigin: true,
   },
-  '/bonuses': {
-    target: 'http://localhost:8084',
+  "/bonuses": {
+    target: "http://localhost:8084",
     changeOrigin: true,
   },
-  '/games': {
-    target: 'http://localhost:8082',
+  "/games": {
+    target: "http://localhost:8082",
     changeOrigin: true,
   },
-  '/ledger': {
-    target: 'http://localhost:8083',
+  "/ledger": {
+    target: "http://localhost:8083",
+    changeOrigin: true,
+  },
+  "/compliance": {
+    target: "http://localhost:8087",
     changeOrigin: true,
   },
 };

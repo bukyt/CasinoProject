@@ -15,6 +15,7 @@ import com.casino.repository.ComplianceFlagRepository;
 import com.casino.repository.ComplianceProfileRepository;
 import com.casino.repository.GamblingLimitRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,6 +27,7 @@ import java.util.Set;
 
 import static com.casino.dto.profile.EligibilityBlockReason.*;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class EligibilityService {
@@ -50,6 +52,7 @@ public class EligibilityService {
 
     @Transactional(readOnly = true)
     public EligibilityResponseDTO checkEligibility(Long playerProfileId) {
+        log.info("Checking eligibility for player profile {}", playerProfileId);
         ComplianceProfile profile = complianceProfileRepository
             .findFirstByPlayerProfileId(playerProfileId)
             .orElseThrow(() -> new ComplianceProfileMissingException(playerProfileId));
@@ -65,6 +68,7 @@ public class EligibilityService {
             profile.getComplianceId()
         );
 
+        log.info("Returning eligibility for player profile {}", playerProfileId);
         return evaluateEligibility(profile, activeLimits, flags, now);
     }
 

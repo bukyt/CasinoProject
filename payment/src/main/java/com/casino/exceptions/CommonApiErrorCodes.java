@@ -8,5 +8,6 @@ public class CommonApiErrorCodes {
 
     public static final String INTERNAL_ERROR = "server.internal_error";
     public static final String PAYMENT_MISSING = "payment.missing";
+    public static final String PAYMENT_NOT_ALLOWED = "payment.not_allowed";
 
 }

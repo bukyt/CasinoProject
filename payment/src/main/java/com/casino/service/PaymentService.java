@@ -23,8 +23,11 @@ public class PaymentService {
 
     private final PaymentRepository paymentRepository;
     private final MockPaymentProviderClient mockPaymentProviderClient;
+    private final PaymentComplianceValidator paymentComplianceValidator;
 
     public PaymentDto createPayment(CreatePaymentDto request, PaymentType type) {
+        paymentComplianceValidator.validatePaymentAllowed(request, type);
+
         Payment payment = Payment.builder()
             .playerProfileId(request.playerProfileId())
             .type(type)
@@ -43,7 +46,6 @@ public class PaymentService {
 
         return toDto(savedPayment);
     }
-
 
     @Transactional(readOnly = true)
     public PaymentDto getPaymentById(Long id) {
