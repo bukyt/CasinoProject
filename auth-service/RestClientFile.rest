@@ -29,7 +29,8 @@ Content-Type: application/json
 }
 
 ### Current account (replace TOKEN)
-@token =eyJhbGciOiJIUzI1NiJ9.eyJhY2NvdW50SWQiOiJhMWIwYjU2ZC03NjkzLTRmNzUtYjQyZC0xMTM4Y2ZhNWY4MjQiLCJyb2xlcyI6IkFETUlOLFBMQVlFUiIsImp0aSI6ImQxNWMyOGRiLTY3YmEtNDA0Ni05YmU5LTkyZTlkMmRjOWQyNyIsInN1YiI6ImFkbWluIiwiaWF0IjoxNzc4NTAxMzU4LCJleHAiOjE3Nzg1MDQ5NTh9.vZdE5ux3xF5weZKuw4cbxaT-qbaHVNCg1PgDe20156Y
+@token =eyJhbGciOiJIUzI1NiJ9.eyJhY2NvdW50SWQiOiJhMWIwYjU2ZC03NjkzLTRmNzUtYjQyZC0xMTM4Y2ZhNWY4MjQiLCJyb2xlcyI6IkFETUlOLFBMQVlFUiIsImp0aSI6IjU4ZDZkOTRhLTFjZDYtNGMxOC1hYjJhLWFkYmZjZGJjNWNjYyIsInN1YiI6ImFkbWluIiwiaWF0IjoxNzc4NTAxMzI3LCJleHAiOjE3Nzg1MDQ5Mjd9.Zj8-h4srNV5kzmtUJRSqJZ4nBD9ykd5E-lD4MwoESl0
+GET {{host}}/auth/me
 Authorization: Bearer {{token}}
 
 ### Logout (invalidates this JWT until expiry)
