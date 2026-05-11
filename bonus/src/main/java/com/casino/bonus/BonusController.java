@@ -103,6 +103,19 @@ public class BonusController {
         return ResponseEntity.status(404).body("No active free spin");
     }
 
+    // ---------------- GET BONUS BY ID ----------------
+    @GetMapping("/{id}")
+    public ResponseEntity<Bonus> getBonus(@PathVariable String id) {
+
+        Bonus bonus = bonuses.get(id);
+
+        if (bonus == null) {
+            return ResponseEntity.status(404).body(null);
+        }
+
+        return ResponseEntity.ok(bonus);
+    }
+
     // ---------------- DTOs ----------------
     public static class CreateBonusRequest {
         public String name;

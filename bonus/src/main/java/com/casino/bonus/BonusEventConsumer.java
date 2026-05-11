@@ -75,15 +75,15 @@ public class BonusEventConsumer {
         return true;
     }
 
-    public void addDebugCredits(String playerId, double amount) {
-        bonusWallet.merge(playerId, amount, Double::sum);
+    public void addDebugCredits(Integer playerId, double amount) {
+        bonusWallet.merge(playerId.toString(), amount, Double::sum);
     }
 
-    public Double getPlayerCredits(String playerId) {
+    public Double getPlayerCredits(Integer playerId) {
         return bonusWallet.getOrDefault(playerId, 0.0);
     }
     
-    public boolean isFreeSpinActive(String playerId) {
+    public boolean isFreeSpinActive(Integer playerId) {
         return false; // REST is source of truth
     }
 }

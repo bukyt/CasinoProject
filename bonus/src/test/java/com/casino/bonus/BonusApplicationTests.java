@@ -22,7 +22,7 @@ class BonusEventConsumerTest {
 
         consumer.process(event);
 
-        assertThat(consumer.getPlayerCredits("player-1"))
+        assertThat(consumer.getPlayerCredits(111029429))
                 .isEqualTo(10.0);
     }
 
@@ -39,7 +39,7 @@ class BonusEventConsumerTest {
             consumer.process(event);
         }
 
-        assertThat(consumer.getPlayerCredits("player-1"))
+        assertThat(consumer.getPlayerCredits(111029429))
                 .isEqualTo(10.0);
     }
 
@@ -49,12 +49,12 @@ class BonusEventConsumerTest {
         BonusEventConsumer consumer = new BonusEventConsumer(new com.fasterxml.jackson.databind.ObjectMapper());
 
         Map<String, Object> event = new HashMap<>();
-        event.put("playerProfileId", "player-1");
+        event.put("playerProfileId", 111029429);
         event.put("amount", BigDecimal.valueOf(30));
 
         consumer.process(event);
 
-        assertThat(consumer.getPlayerCredits("player-1"))
+        assertThat(consumer.getPlayerCredits(111029429))
                 .isEqualTo(0.0);
     }
 
@@ -63,9 +63,9 @@ class BonusEventConsumerTest {
 
         BonusEventConsumer consumer = new BonusEventConsumer(new com.fasterxml.jackson.databind.ObjectMapper());
 
-        consumer.addDebugCredits("player-1", 25.0);
+        consumer.addDebugCredits(111029429, 25.0);
 
-        assertThat(consumer.getPlayerCredits("player-1"))
+        assertThat(consumer.getPlayerCredits(111029429))
                 .isEqualTo(25.0);
     }
 }

@@ -31,13 +31,11 @@ class BonusIntegrationTest {
     @Test
     void endToEndBonusFlow_shouldAccumulateAndExposeBonus() throws Exception {
 
-        String playerId = "player-1";
+        Integer playerId = 11029429;
 
         BetPlaced event = new BetPlaced();
         event.setPlayerProfileId(playerId);
         event.setAmount(BigDecimal.valueOf(50));
-
-        // ✅ FIX: send JSON string instead of object
         kafkaTemplate.send("betplaced", objectMapper.writeValueAsString(event));
 
         waitForBonus(playerId, 10.0);
@@ -56,15 +54,13 @@ class BonusIntegrationTest {
     @Test
     void shouldAccumulateMultipleBetsIntoSingleBonusBlock() throws Exception {
 
-        String playerId = "player-2";
+        Integer playerId = 11029430;
 
         for (int i = 0; i < 5; i++) {
 
             BetPlaced event = new BetPlaced();
             event.setPlayerProfileId(playerId);
             event.setAmount(BigDecimal.valueOf(10));
-
-            // ✅ FIX: JSON string
             kafkaTemplate.send("betplaced", objectMapper.writeValueAsString(event));
         }
 
@@ -77,7 +73,7 @@ class BonusIntegrationTest {
     // ----------------------------
     // deterministic polling
     // ----------------------------
-    private void waitForBonus(String playerId, double expected) throws InterruptedException {
+    private void waitForBonus(Integer playerId, double expected) throws InterruptedException {
 
         long start = System.currentTimeMillis();
 
