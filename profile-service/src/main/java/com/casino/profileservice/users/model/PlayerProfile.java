@@ -10,6 +10,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
@@ -24,15 +25,14 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class PlayerProfile {
-    @Id
-    @GeneratedValue(strategy = jakarta.persistence.GenerationType.IDENTITY)
-    private Long id; // This is the Integer (1, 2, 3...) we need
 
-    @Column(name = "player_profile_id", nullable = false, unique = true)
-    private String playerProfileId; // This is the UUID String
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "player_profile_id", nullable = false, updatable = false)
+    private Integer playerProfileId;
 
     @Column(nullable = false, unique = true)
-    private String accountId; // Auth UUID
+    private String accountId;
 
     @Column(nullable = false)
     private String fullName;
@@ -45,6 +45,11 @@ public class PlayerProfile {
     private ProfileStatus status;
 
     @Embedded
+    @AttributeOverrides({
+            @AttributeOverride(name = "email", column = @Column(name = "email")),
+            @AttributeOverride(name = "phone", column = @Column(name = "phone")),
+            @AttributeOverride(name = "address", column = @Column(name = "address"))
+    })
     private ContactDetails contactDetails;
 
     @Embedded

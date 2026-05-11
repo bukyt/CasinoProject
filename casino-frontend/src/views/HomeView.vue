@@ -24,17 +24,14 @@
         <hr class="divider" />
 
         <dl class="grid">
-          <dt>Database ID (Numeric)</dt>
+          <dt>Profile ID (numeric PK)</dt>
           <dd>
-            <strong :class="{ 'warning-text': !profile.id }">
-              {{ profile.id || 'Pending Backend Update...' }}
+            <strong :class="{ 'warning-text': profile.playerProfileId == null }">
+              {{ profile.playerProfileId ?? '—' }}
             </strong>
           </dd>
-          
-          <dt>Internal Profile UUID</dt>
-          <dd class="uuid-text">{{ profile.playerProfileId }}</dd>
-          
-          <dt>Account Auth UUID</dt>
+
+          <dt>Account ID (auth)</dt>
           <dd class="uuid-text">{{ profile.accountId }}</dd>
           
           <dt>Full name</dt>
@@ -99,16 +96,15 @@ const refreshData = async () => {
     
     profile.value = profileData;
 
-    // 2. Extract the Numeric Internal ID
-    // We check .id (the new Long field) first. 
-    const internalNumericId = profileData.id; 
+    // 2. Numeric internal id for bonus/ledger/game = playerProfileId (Integer PK from profile-service)
+    const internalNumericId = profileData.playerProfileId;
 
     if (internalNumericId !== undefined && internalNumericId !== null) {
-      // 3. Fetch Credits using the Integer ID (Matches Ledger/Game Service expectations)
       credits.value = await fetchPlayerCredits(internalNumericId);
     } else {
-      console.error("Numeric ID is still missing from JSON response.");
-      loadError.value = "Profile synced, but numeric Internal ID is missing. Check Java entity and DB columns.";
+      console.error("playerProfileId missing from profile JSON.", profileData);
+      loadError.value =
+        "Profile synced, but playerProfileId is missing. Ensure profile-service returns playerProfileId (integer).";
     }
 
   } catch (e) {

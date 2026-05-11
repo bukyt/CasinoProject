@@ -33,24 +33,27 @@ public class PlayerProfileController {
         return playerProfileService.createProfile(request, authorization);
     }
 
-    @GetMapping("/{id}")
-    public PlayerProfileResponse getProfile(@PathVariable String id) {
-        return playerProfileService.getProfile(id);
+    @GetMapping("/{playerProfileId}")
+    public PlayerProfileResponse getProfile(@PathVariable Integer playerProfileId) {
+        return playerProfileService.getProfile(playerProfileId);
     }
 
-    @PutMapping("/{id}")
-    public PlayerProfileResponse updateProfile(@PathVariable String id, @Valid @RequestBody PlayerProfileRequest request) {
-        return playerProfileService.updateProfile(id, request);
+    @PutMapping("/{playerProfileId}")
+    public PlayerProfileResponse updateProfile(@PathVariable Integer playerProfileId,
+            @Valid @RequestBody PlayerProfileRequest request) {
+        return playerProfileService.updateProfile(playerProfileId, request);
     }
 
-    @PatchMapping("/{id}/contact")
-    public PlayerProfileResponse updateContact(@PathVariable String id, @Valid @RequestBody ContactDetailsRequest request) {
-        return playerProfileService.updateContact(id, request);
+    @PatchMapping("/{playerProfileId}/contact")
+    public PlayerProfileResponse updateContact(@PathVariable Integer playerProfileId,
+            @Valid @RequestBody ContactDetailsRequest request) {
+        return playerProfileService.updateContact(playerProfileId, request);
     }
 
-    @PatchMapping("/{id}/preferences")
-    public PlayerProfileResponse updatePreferences(@PathVariable String id, @Valid @RequestBody PreferencesRequest request) {
-        return playerProfileService.updatePreferences(id, request);
+    @PatchMapping("/{playerProfileId}/preferences")
+    public PlayerProfileResponse updatePreferences(@PathVariable Integer playerProfileId,
+            @Valid @RequestBody PreferencesRequest request) {
+        return playerProfileService.updatePreferences(playerProfileId, request);
     }
 
     @GetMapping("/account/{accountId}")

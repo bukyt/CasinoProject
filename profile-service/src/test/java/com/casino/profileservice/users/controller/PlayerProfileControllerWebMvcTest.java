@@ -31,7 +31,7 @@ class PlayerProfileControllerWebMvcTest {
     @Test
     void getProfileReturnsOkWhenProfileExists() throws Exception {
         PlayerProfileResponse response = PlayerProfileResponse.builder()
-                .playerProfileId("pp-01")
+                .playerProfileId(1)
                 .accountId("acc-01")
                 .fullName("Demo Player One")
                 .dateOfBirth(LocalDate.of(1995, 5, 10))
@@ -43,21 +43,21 @@ class PlayerProfileControllerWebMvcTest {
                 .currency("EUR")
                 .build();
 
-        when(playerProfileService.getProfile("pp-01")).thenReturn(response);
+        when(playerProfileService.getProfile(1)).thenReturn(response);
 
-        mockMvc.perform(get("/profiles/pp-01"))
+        mockMvc.perform(get("/profiles/1"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.playerProfileId").value("pp-01"))
+                .andExpect(jsonPath("$.playerProfileId").value(1))
                 .andExpect(jsonPath("$.accountId").value("acc-01"))
                 .andExpect(jsonPath("$.status").value("ACTIVE"));
     }
 
     @Test
     void getProfileReturnsNotFoundWhenServiceThrowsNotFound() throws Exception {
-        when(playerProfileService.getProfile("missing-id"))
+        when(playerProfileService.getProfile(99999))
                 .thenThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "Profile not found"));
 
-        mockMvc.perform(get("/profiles/missing-id"))
+        mockMvc.perform(get("/profiles/99999"))
                 .andExpect(status().isNotFound());
     }
 }

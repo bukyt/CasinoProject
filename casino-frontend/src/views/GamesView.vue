@@ -22,13 +22,12 @@ const fetchData = async () => {
 
     // 2. Fetch the actual Profile to get the internal ID (player ID)
     const profile = await fetchProfileByAccountId(accountId);
-    if (!profile || !profile.id) {
-      console.error("Profile not found for account");
+    if (!profile || profile.playerProfileId == null) {
+      console.error("Profile not found or playerProfileId missing for account");
       return;
     }
-    
-    // Set the dynamic ID (Assuming profile.id is what the game/bonus service expects)
-    playerId.value = profile.id;
+
+    playerId.value = profile.playerProfileId;
 
     // 3. Fetch Games list (Proxy '/games' -> :8082)
     const gRes = await fetch('/games');

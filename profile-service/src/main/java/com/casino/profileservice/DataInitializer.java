@@ -23,7 +23,6 @@ public class DataInitializer {
             }
 
             PlayerProfile profile1 = new PlayerProfile();
-            profile1.setPlayerProfileId("pp-01");
             profile1.setAccountId("acc-01");
             profile1.setFullName("Demo Player One");
             profile1.setDateOfBirth(LocalDate.of(1995, 5, 10));
@@ -31,9 +30,8 @@ public class DataInitializer {
             profile1.setContactDetails(new ContactDetails("player1@example.com", "+3725000001", "Tallinn"));
             profile1.setPreferences(new Preferences("en", "EUR"));
             playerProfileRepository.save(profile1);
-            
+
             PlayerProfile profile2 = new PlayerProfile();
-            profile2.setPlayerProfileId("pp-02");
             profile2.setAccountId("acc-02");
             profile2.setFullName("Demo Player Two");
             profile2.setDateOfBirth(LocalDate.of(1998, 8, 21));

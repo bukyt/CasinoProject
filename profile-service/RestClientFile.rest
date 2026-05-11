@@ -7,9 +7,8 @@ GET http://localhost:8086/v3/api-docs
 ##############################
 ### Profiles API
 ##############################
-### Create profile requires a Bearer token for the same accountId (profile-service calls auth GET /auth/accounts/{id}).
-### Login via auth-service, paste token below, or set auth.verification.enabled=false for local-only testing.
-@token = eyJhbGciOiJIUzI1NiJ9.eyJhY2NvdW50SWQiOiJhMWIwYjU2ZC03NjkzLTRmNzUtYjQyZC0xMTM4Y2ZhNWY4MjQiLCJyb2xlcyI6IkFETUlOLFBMQVlFUiIsImp0aSI6IjMxNDA5MjkzLTYwZWQtNGNkNy04ZDM5LWQ0YmJhZDVmMTJjZiIsInN1YiI6ImFkbWluIiwiaWF0IjoxNzc4MzI1NTg0LCJleHAiOjE3NzgzMjkxODR9.EVgdt0MgzqAfxfMtx-u90DUo2YCwJlL8OSDXln7gkI0
+
+@token = eyJhbGciOiJIUzI1NiJ9.eyJhY2NvdW50SWQiOiJhMWIwYjU2ZC03NjkzLTRmNzUtYjQyZC0xMTM4Y2ZhNWY4MjQiLCJyb2xlcyI6IkFETUlOLFBMQVlFUiIsImp0aSI6ImY2YzE2ZTM4LTYzMTItNDg2OC1iZGZlLWQ4ZDcyOTZjMjI3NSIsInN1YiI6ImFkbWluIiwiaWF0IjoxNzc4NTAwOTY1LCJleHAiOjE3Nzg1MDQ1NjV9.1Q9-zkVmR-L6bn6k9pJtDmpGHB1DFNuo_JlAcjaHwxk
 
 ### Create player profile
 POST http://localhost:8086/profiles
@@ -17,7 +16,7 @@ content-type: application/json
 Authorization: Bearer {{token}}
 
 {
-  "accountId": "4719fcf0-ada5-4268-8bb7-c329c83f3a15",
+  "accountId": "c37779b3-712c-4d21-bf36-a188793261b4",
   "fullName": "Test Player",
   "dateOfBirth": "1999-04-15",
   "status": "ACTIVE",
@@ -28,15 +27,15 @@ Authorization: Bearer {{token}}
   "currency": "EUR"
 }
 
-### Get player profile by id
-GET http://localhost:8086/profiles/9c7b119d-b95d-4170-98c8-d44da0907568
+### Get player profile by id (integer PK — use 1 or 2 for seeded data)
+GET http://localhost:8086/profiles/1
 
 ### Update player profile
-PUT http://localhost:8086/profiles/9c7b119d-b95d-4170-98c8-d44da0907568
+PUT http://localhost:8086/profiles/1
 content-type: application/json
 
 {
-  "accountId": "4719fcf0-ada5-4268-8bb7-c329c83f3a15",
+  "accountId": "acc-01",
   "fullName": "Test Player Updated",
   "dateOfBirth": "1999-04-15",
   "status": "INACTIVE",
@@ -48,7 +47,7 @@ content-type: application/json
 }
 
 ### Update contact details
-PATCH http://localhost:8086/profiles/9c7b119d-b95d-4170-98c8-d44da0907568/contact
+PATCH http://localhost:8086/profiles/1/contact
 content-type: application/json
 
 {
@@ -58,7 +57,7 @@ content-type: application/json
 }
 
 ### Update preferences
-PATCH http://localhost:8086/profiles/9c7b119d-b95d-4170-98c8-d44da0907568/preferences
+PATCH http://localhost:8086/profiles/1/preferences
 content-type: application/json
 
 {
@@ -67,4 +66,4 @@ content-type: application/json
 }
 
 ### Get profile by account id
-GET http://localhost:8086/profiles/account/4719fcf0-ada5-4268-8bb7-c329c83f3a15
+GET http://localhost:8086/profiles/account/acc-01

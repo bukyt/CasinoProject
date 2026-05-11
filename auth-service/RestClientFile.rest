@@ -6,7 +6,7 @@ POST {{host}}/auth/register
 Content-Type: application/json
 
 {
-  "username": "player14e",
+  "username": "player14613w",
   "password": "secret12"
 }
 
@@ -15,8 +15,8 @@ POST {{host}}/auth/login
 Content-Type: application/json
 
 {
-  "username": "player14e",
-  "password": "secret12"
+  "username": "uus3",
+  "password": "testik"
 }
 
 ### Login as seeded admin (password from DataInitializer)
@@ -29,8 +29,7 @@ Content-Type: application/json
 }
 
 ### Current account (replace TOKEN)
-@token =eyJhbGciOiJIUzI1NiJ9.eyJhY2NvdW50SWQiOiJhMWIwYjU2ZC03NjkzLTRmNzUtYjQyZC0xMTM4Y2ZhNWY4MjQiLCJyb2xlcyI6IkFETUlOLFBMQVlFUiIsImp0aSI6ImQxMDhjMzZmLTBjOGYtNGI4Yy1hYTEyLWQxMTFhOWZhMmQ1OCIsInN1YiI6ImFkbWluIiwiaWF0IjoxNzc4NDA3MTkwLCJleHAiOjE3Nzg0MTA3OTB9.Igj71TlVLBw-dV4DXg39q84fgLiqb6JJyFuK6L5RmKI
-GET {{host}}/auth/me
+@token =eyJhbGciOiJIUzI1NiJ9.eyJhY2NvdW50SWQiOiJhMWIwYjU2ZC03NjkzLTRmNzUtYjQyZC0xMTM4Y2ZhNWY4MjQiLCJyb2xlcyI6IkFETUlOLFBMQVlFUiIsImp0aSI6ImQxNWMyOGRiLTY3YmEtNDA0Ni05YmU5LTkyZTlkMmRjOWQyNyIsInN1YiI6ImFkbWluIiwiaWF0IjoxNzc4NTAxMzU4LCJleHAiOjE3Nzg1MDQ5NTh9.vZdE5ux3xF5weZKuw4cbxaT-qbaHVNCg1PgDe20156Y
 Authorization: Bearer {{token}}
 
 ### Logout (invalidates this JWT until expiry)
@@ -42,7 +41,6 @@ GET {{host}}/auth/accounts/a1b0b56d-7693-4f75-b42d-1138cfa5f824
 Authorization: Bearer {{token}}
 
 ### Update account status — ADMIN only
-### Blank line below headers is required — otherwise `{` is parsed as a header name.
 PATCH {{host}}/auth/accounts/48c10410-8193-49c7-92b8-33ac1c405d11/status
 Content-Type: application/json
 Authorization: Bearer {{token}}
