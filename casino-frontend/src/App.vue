@@ -102,6 +102,21 @@ body {
   color: var(--accent);
 }
 
+/* Bonus link has a subtle highlight even when inactive */
+.nav-links a.nav-bonus {
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.25rem 0.65rem;
+  font-size: 0.88rem;
+  transition: border-color 0.15s, color 0.15s;
+}
+.nav-links a.nav-bonus:hover,
+.nav-links a.nav-bonus.router-link-active {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 .main {
   flex: 1;
   padding: 1.5rem;

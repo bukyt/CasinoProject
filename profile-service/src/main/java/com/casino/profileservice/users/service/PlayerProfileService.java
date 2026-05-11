@@ -1,11 +1,12 @@
 package com.casino.profileservice.users.service;
 
-import java.util.UUID;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import com.casino.profileservice.integration.AuthAccountClient;
 import com.casino.profileservice.users.dto.ContactDetailsRequest;
 import com.casino.profileservice.users.dto.PlayerProfileRequest;
 import com.casino.profileservice.users.dto.PlayerProfileResponse;
@@ -22,14 +23,17 @@ public class PlayerProfileService {
     @Autowired
     private PlayerProfileRepository playerProfileRepository;
 
-    public PlayerProfileResponse createProfile(PlayerProfileRequest request) {
+    @Autowired
+    private AuthAccountClient authAccountClient;
+
+    public PlayerProfileResponse createProfile(PlayerProfileRequest request, String authorizationHeader) {
+        authAccountClient.verifyAccountExists(request.getAccountId(), authorizationHeader);
         if (playerProfileRepository.existsByAccountId(request.getAccountId())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "Profile already exists for accountId: " + request.getAccountId());
         }
 
         PlayerProfile profile = PlayerProfile.builder()
-                .playerProfileId(UUID.randomUUID().toString())
                 .accountId(request.getAccountId())
                 .fullName(request.getFullName())
                 .dateOfBirth(request.getDateOfBirth())
@@ -48,16 +52,14 @@ public class PlayerProfileService {
         return mapToDto(playerProfileRepository.save(profile));
     }
 
-    public PlayerProfileResponse getProfile(String id) {
-        return mapToDto(playerProfileRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Profile not found")));
+    public PlayerProfileResponse getProfile(Integer playerProfileId) {
+        return mapToDto(requireProfile(playerProfileId));
     }
 
-    public PlayerProfileResponse updateProfile(String id, PlayerProfileRequest request) {
-        PlayerProfile profile = playerProfileRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Profile not found"));
+    public PlayerProfileResponse updateProfile(Integer playerProfileId, PlayerProfileRequest request) {
+        PlayerProfile profile = requireProfile(playerProfileId);
 
-        if (playerProfileRepository.existsByAccountIdAndPlayerProfileIdNot(request.getAccountId(), id)) {
+        if (playerProfileRepository.existsByAccountIdAndPlayerProfileIdNot(request.getAccountId(), playerProfileId)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "Another profile already uses accountId: " + request.getAccountId());
         }
@@ -79,9 +81,8 @@ public class PlayerProfileService {
         return mapToDto(playerProfileRepository.save(profile));
     }
 
-    public PlayerProfileResponse updateContact(String id, ContactDetailsRequest request) {
-        PlayerProfile profile = playerProfileRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Profile not found"));
+    public PlayerProfileResponse updateContact(Integer playerProfileId, ContactDetailsRequest request) {
+        PlayerProfile profile = requireProfile(playerProfileId);
 
         ContactDetails contactDetails = profile.getContactDetails() == null ? new ContactDetails()
                 : profile.getContactDetails();
@@ -99,9 +100,8 @@ public class PlayerProfileService {
         return mapToDto(playerProfileRepository.save(profile));
     }
 
-    public PlayerProfileResponse updatePreferences(String id, PreferencesRequest request) {
-        PlayerProfile profile = playerProfileRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Profile not found"));
+    public PlayerProfileResponse updatePreferences(Integer playerProfileId, PreferencesRequest request) {
+        PlayerProfile profile = requireProfile(playerProfileId);
 
         Preferences preferences = profile.getPreferences() == null ? new Preferences() : profile.getPreferences();
         if (request.getLanguage() != null) {
@@ -115,9 +115,21 @@ public class PlayerProfileService {
         return mapToDto(playerProfileRepository.save(profile));
     }
 
+    /**
+     * Lookup by auth account id. Empty when no profile row exists.
+     */
+    public Optional<PlayerProfileResponse> findByAccountIdOptional(String accountId) {
+        return playerProfileRepository.findByAccountId(accountId).map(this::mapToDto);
+    }
+
     public PlayerProfileResponse getByAccountId(String accountId) {
-        return mapToDto(playerProfileRepository.findByAccountId(accountId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Profile not found")));
+        return findByAccountIdOptional(accountId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Profile not found"));
+    }
+
+    private PlayerProfile requireProfile(Integer playerProfileId) {
+        return playerProfileRepository.findById(playerProfileId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Profile not found"));
     }
 
     private PlayerProfileResponse mapToDto(PlayerProfile profile) {

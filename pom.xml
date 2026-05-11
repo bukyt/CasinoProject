@@ -8,6 +8,11 @@
     <artifactId>casino-parent</artifactId>
     <version>1.0.0</version>
     <packaging>pom</packaging>
+    <properties>
+        <java.version>17</java.version>
+        <lombok.version>1.18.30</lombok.version>
+        <maven.compiler.plugin.version>3.13.0</maven.compiler.plugin.version>
+    </properties>
 
     <modules>
         <module>common</module>
@@ -21,7 +26,7 @@
         <module>profile-service</module>
         <module>auth-service</module>
         <module>payment</module>
-        <!-- <module>wallet-service</module> -->
+        <module>wallet</module>
     </modules>
 
     <dependencyManagement>

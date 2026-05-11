@@ -9,6 +9,8 @@ import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
@@ -23,8 +25,11 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class PlayerProfile {
+
     @Id
-    private String playerProfileId;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "player_profile_id", nullable = false, updatable = false)
+    private Integer playerProfileId;
 
     @Column(nullable = false, unique = true)
     private String accountId;
@@ -40,6 +45,11 @@ public class PlayerProfile {
     private ProfileStatus status;
 
     @Embedded
+    @AttributeOverrides({
+            @AttributeOverride(name = "email", column = @Column(name = "email")),
+            @AttributeOverride(name = "phone", column = @Column(name = "phone")),
+            @AttributeOverride(name = "address", column = @Column(name = "address"))
+    })
     private ContactDetails contactDetails;
 
     @Embedded

@@ -10,7 +10,7 @@ import lombok.Data;
 @Data
 @Builder
 public class PlayerProfileResponse {
-    private String playerProfileId;
+    private Integer playerProfileId;
     private String accountId;
     private String fullName;
     private LocalDate dateOfBirth;

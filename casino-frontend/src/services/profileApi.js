@@ -1,13 +1,15 @@
+import { getToken } from '../auth.js';
+
 /**
- * Profile service (no JWT on backend in current setup).
- * Uses accountId from auth JWT — must match the logged-in account.
- *
- * Lookup uses `/api/profile-by-account/:id` so the Vite dev/preview server can map
- * backend 404 to 200 + JSON null (no "failed" request in the Network panel).
+ * GET /profiles/account/{accountId}?optional=true — profile-service returns 204 when no profile (success in Network),
+ * 200 + JSON when found. Same path as your API doc; query flag is additive.
  */
 export async function fetchProfileByAccountId(accountId) {
-  const res = await fetch(`/api/profile-by-account/${encodeURIComponent(accountId)}`);
-  if (res.status === 404) return null;
+  const qs = new URLSearchParams({ optional: 'true' });
+  const res = await fetch(`/profiles/account/${encodeURIComponent(accountId)}?${qs}`);
+  if (res.status === 204) {
+    return null;
+  }
   if (!res.ok) {
     const text = await res.text();
     throw new Error(text || `Profile HTTP ${res.status}`);
@@ -16,9 +18,14 @@ export async function fetchProfileByAccountId(accountId) {
 }
 
 export async function createPlayerProfile(payload) {
+  const token = getToken();
+  const headers = { 'Content-Type': 'application/json' };
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
   const res = await fetch('/profiles', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify(payload),
   });
   if (!res.ok) {

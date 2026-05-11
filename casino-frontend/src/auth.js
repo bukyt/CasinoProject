@@ -34,6 +34,21 @@ export function getAccountIdFromToken() {
     return null;
   }
 }
+/**
+ * Extracts the playerProfileId from the JWT.
+ * Essential for Bonus and Game service calls.
+ */
+export function getPlayerProfileIdFromToken() {
+  const token = getToken();
+  if (!token || !isAuthenticated()) return null;
+  try {
+    const decoded = jwtDecode(token);
+    // Note: Ensure the key matches what your Auth service puts in the JWT
+    return decoded.playerProfileId ?? null; 
+  } catch {
+    return null;
+  }
+}
 
 export function getUsernameFromToken() {
   const token = getToken();

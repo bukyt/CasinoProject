@@ -26,7 +26,7 @@ Content-Type: application/json
 
 # IMPORTANT: Look at the response from step 2. 
 # If it's your first run, it's session-1.
-@sessionId = session-1
+@sessionId = session-7
 
 ##############################################
 ### 3. PLACE BET (HAPPY PATH)
