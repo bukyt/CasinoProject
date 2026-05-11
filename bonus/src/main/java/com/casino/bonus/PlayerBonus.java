@@ -1,23 +1,19 @@
 package com.casino.bonus;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
 
 @Data
+@AllArgsConstructor
 public class PlayerBonus {
+
     private String playerId;
     private String bonusId;
-    private double wageringRequired;
-    private double wageringProgress;
-    private String status; // active, completed
+    private double requiredWagering;
+    private double progress;
+    private String status;
 
-    public PlayerBonus(String playerId, String bonusId,
-                       double wageringRequired,
-                       double wageringProgress,
-                       String status) {
-        this.playerId = playerId;
-        this.bonusId = bonusId;
-        this.wageringRequired = wageringRequired;
-        this.wageringProgress = wageringProgress;
-        this.status = status;
+    public boolean isActive() {
+        return "active".equals(status);
     }
 }

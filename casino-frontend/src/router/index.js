@@ -23,7 +23,6 @@ const routes = [
     meta: { requiresAuth: true, requiresProfile: true },
   },
 
-  // 🔥 FIX: include playerId in route
   {
     path: '/game/:sessionId/:playerId',
     name: 'Game',

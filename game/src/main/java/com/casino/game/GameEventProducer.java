@@ -3,7 +3,6 @@ package com.casino.game;
 import com.casino.event.BetPlaced;
 import com.casino.event.BetSettled;
 import org.springframework.kafka.core.KafkaTemplate;
-import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -16,20 +15,10 @@ public class GameEventProducer {
     }
 
     public void sendBetPlaced(BetPlaced event) {
-        kafkaTemplate.send(
-                "betplaced",
-                MessageBuilder.withPayload(event)
-                        .setHeader("__TypeId__", "betplaced")
-                        .build()
-        );
+        kafkaTemplate.send("betplaced", event);
     }
 
     public void sendBetSettled(BetSettled event) {
-        kafkaTemplate.send(
-                "betsettled",
-                MessageBuilder.withPayload(event)
-                        .setHeader("__TypeId__", "betsettled")
-                        .build()
-        );
+        kafkaTemplate.send("betsettled", event);
     }
 }

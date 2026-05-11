@@ -1,5 +1,5 @@
-### Create Bonus
-POST http://localhost:8083/bonuses
+### CREATE BONUS
+POST http://localhost:8084/bonuses
 Content-Type: application/json
 
 {
@@ -10,28 +10,30 @@ Content-Type: application/json
 
 ###
 
-### List Bonuses
-GET http://localhost:8083/bonuses
+### LIST BONUSES
+GET http://localhost:8084/bonuses
 
 ###
 
-### Get Bonus
-GET http://localhost:8083/bonuses/bonus-1
+### GET BONUS (adjust id if needed)
+GET http://localhost:8084/bonuses/bonus-3
 
 ###
 
-### Assign Bonus to Player
-POST http://localhost:8083/bonuses/bonus-1/assign
-Content-Type: application/json
-
-{
-  "playerId": "player-1"
-}
+### GRANT FREE SPIN
+POST http://localhost:8084/bonuses/players/player-1/grant-free-spin
 
 ###
 
-### List Player Bonuses
-GET http://localhost:8083/bonuses/players/player-1
+### CHECK ACTIVE BONUS
+GET http://localhost:8084/bonuses/players/player-1/has-active-bonus
 
-### Frontend API Tests
-POST http://localhost:8084/bonuses/bonus-1/assign
+###
+
+### CONSUME FREE SPIN
+POST http://localhost:8084/bonuses/players/player-1/consume
+
+###
+
+### VERIFY AFTER CONSUME
+GET http://localhost:8084/bonuses/players/player-1/has-active-bonus

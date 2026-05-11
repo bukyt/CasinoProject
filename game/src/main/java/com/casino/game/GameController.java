@@ -30,10 +30,20 @@ public class GameController {
     @PostMapping("/sessions")
     @Operation(summary = "Create a game session", description = "Starts a new session for a specific game and player")
     public ResponseEntity<GameSession> createSession(@RequestBody CreateSessionRequest request) {
+
         String id = "session-" + counter.incrementAndGet();
-        return ResponseEntity.ok(
-                service.createSession(id, request.getGameId(), request.getInitialBalance(), request.getPlayerProfileId())
+
+        GameSession session = service.createSession(
+                id,
+                request.getGameId(),
+                request.getInitialBalance(),
+                request.getPlayerProfileId()
         );
+
+        // DEBUG (important for your current issue)
+        System.out.println("CREATED SESSION ID: " + session.getId());
+
+        return ResponseEntity.ok(session);
     }
 
     @GetMapping("/sessions/{id}")
@@ -49,8 +59,9 @@ public class GameController {
     @ApiResponse(responseCode = "200", description = "Bet placed successfully")
     @ApiResponse(responseCode = "400", description = "Insufficient funds or closed session")
     public ResponseEntity<?> placeBet(
-            @Parameter(description = "The session ID") @PathVariable String id, 
+            @Parameter(description = "The session ID") @PathVariable String id,
             @RequestBody PlaceBetRequest request) {
+
         try {
             return ResponseEntity.ok(service.placeBet(id, request.getAmount()));
         } catch (RuntimeException e) {

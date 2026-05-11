@@ -1,11 +1,12 @@
 package com.casino.bonus;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.test.context.EmbeddedKafka;
-import org.springframework.test.web.reactive.server.WebTestClient;
 
 import java.math.BigDecimal;
 
@@ -16,35 +17,77 @@ import static org.assertj.core.api.Assertions.assertThat;
 class BonusIntegrationTest {
 
     @Autowired
-    private KafkaTemplate<String, BetPlaced> kafkaTemplate;
+    private KafkaTemplate<String, Object> kafkaTemplate;
 
     @Autowired
-    private WebTestClient client;
+    private TestRestTemplate rest;
+
+    @Autowired
+    private BonusEventConsumer consumer;
+
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @Test
-    void endToEndBonusFlow() throws Exception {
-        // Use the same UUID format your frontend is sending
-        String playerId = "85ffa295-8d61-47fd-844f-7b8add99aa38";
+    void endToEndBonusFlow_shouldAccumulateAndExposeBonus() throws Exception {
 
-        // 1. Send bet event via Kafka
+        Integer playerId = 11029429;
+
         BetPlaced event = new BetPlaced();
-        event.setPlayerProfileId(playerId); // Now accepts String
+        event.setPlayerProfileId(playerId);
         event.setAmount(BigDecimal.valueOf(50));
+        kafkaTemplate.send("betplaced", objectMapper.writeValueAsString(event));
 
-        kafkaTemplate.send("betplaced", event);
+        waitForBonus(playerId, 10.0);
 
-        // Allow time for the @KafkaListener in BonusEventConsumer to process
-        Thread.sleep(1500); 
+        Boolean active = rest.getForObject(
+                "/bonuses/players/" + playerId + "/has-active-bonus",
+                Boolean.class
+        );
 
-        // 2. Check credits via REST API
-        Double credits = client.get()
-                .uri("/bonuses/players/" + playerId + "/credits")
-                .exchange()
-                .expectStatus().isOk() // This would fail with 400 if we sent an Integer
-                .expectBody(Double.class)
-                .returnResult()
-                .getResponseBody();
+        assertThat(active).isFalse();
 
+        Double credits = consumer.getPlayerCredits(playerId);
         assertThat(credits).isEqualTo(10.0);
+    }
+
+    @Test
+    void shouldAccumulateMultipleBetsIntoSingleBonusBlock() throws Exception {
+
+        Integer playerId = 11029430;
+
+        for (int i = 0; i < 5; i++) {
+
+            BetPlaced event = new BetPlaced();
+            event.setPlayerProfileId(playerId);
+            event.setAmount(BigDecimal.valueOf(10));
+            kafkaTemplate.send("betplaced", objectMapper.writeValueAsString(event));
+        }
+
+        waitForBonus(playerId, 10.0);
+
+        assertThat(consumer.getPlayerCredits(playerId))
+                .isEqualTo(10.0);
+    }
+
+    // ----------------------------
+    // deterministic polling
+    // ----------------------------
+    private void waitForBonus(Integer playerId, double expected) throws InterruptedException {
+
+        long start = System.currentTimeMillis();
+
+        while (System.currentTimeMillis() - start < 5000) {
+
+            Double value = consumer.getPlayerCredits(playerId);
+
+            if (value != null && value >= expected) {
+                return;
+            }
+
+            Thread.sleep(50);
+        }
+
+        throw new AssertionError("Bonus not reached in time");
     }
 }

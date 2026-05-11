@@ -4,14 +4,14 @@ import java.math.BigDecimal;
 
 public class BetPlaced {
     // CHANGE: Integer to String
-    private String playerProfileId; 
+    private Integer playerProfileId; 
     private BigDecimal amount;
 
-    public String getPlayerProfileId() {
+    public Integer getPlayerProfileId() {
         return playerProfileId;
     }
 
-    public void setPlayerProfileId(String playerProfileId) {
+    public void setPlayerProfileId(Integer playerProfileId) {
         this.playerProfileId = playerProfileId;
     }
 
