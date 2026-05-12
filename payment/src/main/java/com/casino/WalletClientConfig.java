@@ -6,11 +6,11 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.web.client.RestClient;
 
 @Configuration
-public class ComplianceClientConfig {
+public class WalletClientConfig {
 
     @Bean
-    RestClient complianceRestClient(
-        @Value("${services.compliance.base-url}") String complianceBaseUrl
+    RestClient walletRestClient(
+        @Value("${services.wallet.base-url}") String complianceBaseUrl
     ) {
         return RestClient.builder()
             .baseUrl(complianceBaseUrl)

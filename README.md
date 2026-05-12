@@ -129,6 +129,7 @@ for eureka stats
 | **bonus**            | `8084` | `game_db`           | Bonus management                      |
 | **profile-service**  | `8086` | `profileservice_db` | User profiles & identity              |
 | **compliance**       | `8087` | `compliance_db`     | Compliance service                    |
+| **payment**          | `8091` | `payment_db`        | Payment service                       |
 
 for swagger add http://localhost:port/swagger-ui/index.html
 
