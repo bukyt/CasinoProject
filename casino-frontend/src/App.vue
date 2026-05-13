@@ -1,7 +1,7 @@
 <script setup>
 import { computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { isAuthenticated } from './auth.js';
+import { isAuthenticated, isAdmin } from './auth.js';
 import { logoutRemote } from './services/authApi.js';
 
 const route = useRoute();
@@ -10,6 +10,11 @@ const router = useRouter();
 const authed = computed(() => {
   route.path;
   return isAuthenticated();
+});
+
+const admin = computed(() => {
+  route.path;
+  return isAdmin();
 });
 
 async function logout() {
@@ -24,6 +29,8 @@ async function logout() {
       <span class="brand">Casino Player</span>
       <nav v-if="authed" class="nav-links">
         <RouterLink to="/">Home</RouterLink>
+        <RouterLink to="/settings">Settings</RouterLink>
+        <RouterLink v-if="admin" to="/admin">Admin</RouterLink>
         <button type="button" class="btn ghost" @click="logout">Logout</button>
       </nav>
       <nav v-else class="nav-links">

@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router';
-import { isAuthenticated, getAccountIdFromToken, clearToken } from '../auth.js';
+import { isAuthenticated, getAccountIdFromToken, clearToken, isAdmin } from '../auth.js';
 import { fetchProfileByAccountId } from '../services/profileApi.js';
 
 import HomeView from '../views/HomeView.vue';
@@ -8,6 +8,8 @@ import RegisterView from '../views/RegisterView.vue';
 import CreateProfileView from '../views/CreateProfileView.vue';
 import GamesView from '../views/GamesView.vue';
 import GameView from '../views/GameView.vue';
+import SettingsView from '../views/SettingsView.vue';
+import AdminView from '../views/AdminView.vue';
 
 const routes = [
   {
@@ -31,6 +33,18 @@ const routes = [
     props: true,
   },
 
+  {
+    path: '/settings',
+    name: 'Settings',
+    component: SettingsView,
+    meta: { requiresAuth: true, requiresProfile: true },
+  },
+  {
+    path: '/admin',
+    name: 'Admin',
+    component: AdminView,
+    meta: { requiresAuth: true, requiresProfile: false, requiresAdmin: true },
+  },
   {
     path: '/complete-profile',
     name: 'CompleteProfile',
@@ -72,6 +86,10 @@ router.beforeEach(async (to, _from, next) => {
   if (!accountId) {
     clearToken();
     return next({ name: 'Login', query: { redirect: to.fullPath } });
+  }
+
+  if (to.meta.requiresAdmin && !isAdmin()) {
+    return next({ name: 'Home' });
   }
 
   let profile = null;

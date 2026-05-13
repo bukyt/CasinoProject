@@ -7,7 +7,10 @@ import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
+import org.springframework.security.authentication.LockedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -27,6 +30,7 @@ import com.casino.authservice.auth.model.RoleName;
 import com.casino.authservice.auth.repository.AccountRepository;
 import com.casino.authservice.auth.repository.RoleAssignmentRepository;
 import com.casino.authservice.config.AccountUserDetails;
+import com.casino.authservice.events.AccountEventPublisher;
 import com.casino.authservice.jwt.JwtService;
 
 import lombok.RequiredArgsConstructor;
@@ -40,6 +44,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
+    private final AccountEventPublisher accountEventPublisher;
 
     @Transactional
     public AuthResponse register(RegisterRequest request) {
@@ -76,8 +81,15 @@ public class AuthService {
                     details.getAccount().getAccountId(),
                     details.getRolesAsCommaSeparated());
             return new AuthResponse(token);
+        } catch (DisabledException | LockedException e) {
+            // AccountUserDetails#isEnabled() returns false for non-ACTIVE accounts,
+            // so Spring's pre-auth check throws DisabledException before the password is verified.
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "Account is suspended. Please contact support.");
         } catch (BadCredentialsException e) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid username or password");
+        } catch (AuthenticationException e) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Login failed");
         }
     }
 
@@ -105,6 +117,8 @@ public class AuthService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Account not found"));
         account.setStatus(request.getStatus());
         accountRepository.save(account);
+        // Notify other services asynchronously
+        accountEventPublisher.publishStatusChanged(account.getAccountId(), account.getStatus());
         return toResponse(account);
     }
 

@@ -59,3 +59,27 @@ export function getUsernameFromToken() {
     return null;
   }
 }
+
+/**
+ * Returns the roles in the JWT as an array.
+ * Auth-service stores them as a comma-separated "roles" claim (e.g. "ADMIN,PLAYER"),
+ * without the Spring "ROLE_" prefix.
+ */
+export function getRolesFromToken() {
+  const token = getToken();
+  if (!token || !isAuthenticated()) return [];
+  try {
+    const raw = jwtDecode(token).roles;
+    if (!raw) return [];
+    return String(raw)
+      .split(',')
+      .map((r) => r.trim().replace(/^ROLE_/i, '').toUpperCase())
+      .filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
+export function isAdmin() {
+  return getRolesFromToken().includes('ADMIN');
+}

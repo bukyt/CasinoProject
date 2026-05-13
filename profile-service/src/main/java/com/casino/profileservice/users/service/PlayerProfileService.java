@@ -14,12 +14,18 @@ import com.casino.profileservice.users.dto.PreferencesRequest;
 import com.casino.profileservice.users.model.ContactDetails;
 import com.casino.profileservice.users.model.PlayerProfile;
 import com.casino.profileservice.users.model.Preferences;
+import com.casino.profileservice.users.model.ProfileStatus;
 import com.casino.profileservice.users.repository.PlayerProfileRepository;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 
 @Service
 public class PlayerProfileService {
+
+    private static final Logger log = LoggerFactory.getLogger(PlayerProfileService.class);
+
     @Autowired
     private PlayerProfileRepository playerProfileRepository;
 
@@ -125,6 +131,29 @@ public class PlayerProfileService {
     public PlayerProfileResponse getByAccountId(String accountId) {
         return findByAccountIdOptional(accountId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Profile not found"));
+    }
+
+    public void applyAccountStatus(String accountId, String authStatus) {
+        if (accountId == null || authStatus == null) {
+            return;
+        }
+        ProfileStatus next = switch (authStatus.toUpperCase()) {
+            case "ACTIVE" -> ProfileStatus.ACTIVE;
+            case "SUSPENDED" -> ProfileStatus.INACTIVE;
+            default -> null;
+        };
+        if (next == null) {
+            log.warn("Unknown auth status '{}' for accountId={}", authStatus, accountId);
+            return;
+        }
+        playerProfileRepository.findByAccountId(accountId).ifPresentOrElse(profile -> {
+            if (profile.getStatus() != next) {
+                profile.setStatus(next);
+                playerProfileRepository.save(profile);
+                log.info("Profile {} for accountId={} → {} (from auth event)",
+                        profile.getPlayerProfileId(), accountId, next);
+            }
+        }, () -> log.info("No profile yet for accountId={}; ignoring status={}", accountId, authStatus));
     }
 
     private PlayerProfile requireProfile(Integer playerProfileId) {

@@ -25,6 +25,34 @@
 
         <hr class="divider" />
 
+        <section v-if="account" class="account-card">
+          <header>
+            <h2>Account</h2>
+            <span
+              class="status-badge"
+              :class="account.status === 'ACTIVE' ? 'active' : 'suspended'"
+            >
+              {{ account.status }}
+            </span>
+          </header>
+
+          <dl class="grid account-grid">
+            <dt>Username</dt>
+            <dd>{{ account.username }}</dd>
+
+            <dt>Account ID</dt>
+            <dd class="uuid-text">{{ account.accountId }}</dd>
+
+            <dt>Roles</dt>
+            <dd>{{ (account.roles || []).join(", ") || "—" }}</dd>
+
+            <dt>Member since</dt>
+            <dd>{{ formatDateTime(account.createdDate) }}</dd>
+          </dl>
+        </section>
+
+        <hr v-if="account" class="divider" />
+
         <dl class="grid">
           <dt>Profile ID (numeric PK)</dt>
           <dd>
@@ -231,6 +259,7 @@
 import { computed, onMounted, ref } from "vue";
 import { getAccountIdFromToken, getUsernameFromToken } from "../auth.js";
 import { fetchProfileByAccountId } from "../services/profileApi.js";
+import { fetchCurrentAccount } from "../services/authApi.js";
 import { fetchPlayerCredits } from "../services/bonusApi.js";
 import {
   fetchComplianceProfile,
@@ -241,6 +270,7 @@ import {
 const username = ref(getUsernameFromToken() || "");
 
 const profile = ref(null);
+const account = ref(null);
 const credits = ref(0);
 const loadError = ref("");
 
@@ -302,6 +332,7 @@ const formatLimit = (limit) => {
 const refreshData = async () => {
   loadError.value = "";
   resetComplianceState();
+  account.value = null;
 
   const aid = getAccountIdFromToken();
 
@@ -311,7 +342,21 @@ const refreshData = async () => {
   }
 
   try {
-    const profileData = await fetchProfileByAccountId(aid);
+    const [accountResult, profileData] = await Promise.all([
+      fetchCurrentAccount().catch((e) => {
+        console.warn("/auth/me failed:", e);
+        return null;
+      }),
+      fetchProfileByAccountId(aid),
+    ]);
+
+    if (accountResult) {
+      account.value = accountResult;
+      if (accountResult.username) {
+        username.value = accountResult.username;
+      }
+    }
+
     console.log("Profile Data received:", profileData);
 
     if (!profileData) {
@@ -566,6 +611,44 @@ dd {
   text-align: center;
   padding: 3rem;
   color: #666;
+}
+
+.account-card header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.account-card h2 {
+  margin: 0;
+  font-size: 1.05rem;
+  color: #fff;
+}
+
+.account-grid {
+  margin: 0;
+}
+
+.account-card .status-badge {
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: bold;
+  border: 1px solid;
+}
+
+.account-card .status-badge.active {
+  background: rgba(76, 175, 80, 0.15);
+  color: #81c784;
+  border-color: #4caf50;
+}
+
+.account-card .status-badge.suspended {
+  background: rgba(255, 82, 82, 0.15);
+  color: #ff8a80;
+  border-color: #ff5252;
 }
 
 .compliance-collapse {

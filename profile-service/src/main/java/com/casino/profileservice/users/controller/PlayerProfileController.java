@@ -62,11 +62,7 @@ public class PlayerProfileController {
         return playerProfileService.updatePreferences(playerProfileId, request);
     }
 
-    /**
-     * GET /profiles/account/{accountId}
-     * <p>Optional query {@code optional=true}: if no profile exists, respond with {@code 204 No Content}
-     * instead of {@code 404} (same resource path as Assignment 3; parameter is additive).</p>
-     */
+
     @GetMapping("/account/{accountId}")
     public ResponseEntity<PlayerProfileResponse> getByAccountId(
             @PathVariable String accountId,

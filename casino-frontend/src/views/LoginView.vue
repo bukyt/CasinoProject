@@ -12,7 +12,13 @@
         Password
         <input v-model="password" type="password" autocomplete="current-password" required />
       </label>
-      <p v-if="error" class="error">{{ error }}</p>
+
+      <div v-if="suspended" class="warning" role="alert">
+        <strong>Account suspended</strong>
+        <p>{{ error }}</p>
+      </div>
+      <p v-else-if="error" class="error">{{ error }}</p>
+
       <button class="btn primary" type="submit" :disabled="loading">
         {{ loading ? 'Signing in…' : 'Login' }}
       </button>
@@ -26,7 +32,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { login } from '../services/authApi.js';
 
@@ -37,6 +43,8 @@ const username = ref('');
 const password = ref('');
 const error = ref('');
 const loading = ref(false);
+
+const suspended = computed(() => /suspend/i.test(error.value));
 
 async function submit() {
   error.value = '';
@@ -100,6 +108,25 @@ input {
   color: var(--danger);
   margin: 0;
   font-size: 0.9rem;
+}
+
+.warning {
+  background: rgba(255, 152, 0, 0.1);
+  border: 1px solid #ff9800;
+  color: #ffb74d;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+}
+
+.warning strong {
+  display: block;
+  color: #ffcc80;
+  margin-bottom: 0.25rem;
+}
+
+.warning p {
+  margin: 0;
 }
 
 .footer {

@@ -6,7 +6,7 @@ POST {{host}}/auth/register
 Content-Type: application/json
 
 {
-  "username": "player146123w",
+  "username": "playerw1464123w",
   "password": "secret12"
 }
 
@@ -29,7 +29,7 @@ Content-Type: application/json
 }
 
 ### Current account (replace TOKEN)
-@token = eyJhbGciOiJIUzI1NiJ9.eyJhY2NvdW50SWQiOiJhMWIwYjU2ZC03NjkzLTRmNzUtYjQyZC0xMTM4Y2ZhNWY4MjQiLCJyb2xlcyI6IkFETUlOLFBMQVlFUiIsImp0aSI6IjdkNGZiMjEzLWVlN2ItNDNlNS05NGM5LWQ1ZGE3MzY2NDg0ZSIsInN1YiI6ImFkbWluIiwiaWF0IjoxNzc4NTAzNzQzLCJleHAiOjE3Nzg1MDczNDN9.stkND-6Ysvb1sLEacKahEEImhG_MiYurYtwuJlcJVO0
+@token = eyJhbGciOiJIUzI1NiJ9.eyJhY2NvdW50SWQiOiI0ZGQ1NjA0Ny00NzU0LTRiOTUtOWU3Mi03MTc3OTJmNjBhN2EiLCJyb2xlcyI6IlBMQVlFUiIsImp0aSI6IjMyZjIzMGMxLTRmMDEtNDMyMy1iOWM5LTkxZGFjYzYzYTRjZCIsInN1YiI6InV1czMiLCJpYXQiOjE3Nzg2NjgxMDcsImV4cCI6MTc3ODY3MTcwN30.HZygSnskWXVFWWFzbHujduhiP0ozr8TsEt9CQd_e0u0
 GET {{host}}/auth/me
 Authorization: Bearer {{token}}
 
@@ -42,7 +42,7 @@ GET {{host}}/auth/accounts/a1b0b56d-7693-4f75-b42d-1138cfa5f824
 Authorization: Bearer {{token}}
 
 ### Update account status — ADMIN only
-PATCH {{host}}/auth/accounts/48c10410-8193-49c7-92b8-33ac1c405d11/status
+PATCH {{host}}/auth/accounts/4dd56047-4754-4b95-9e72-717792f60a7a/status
 Content-Type: application/json
 Authorization: Bearer {{token}}
 
