@@ -26,6 +26,7 @@
         <hr class="divider" />
 
         <section v-if="account" class="account-card">
+          <code class="endpoint">GET /auth/me</code>
           <header>
             <h2>Account</h2>
             <span
@@ -52,9 +53,10 @@
         </section>
 
         <hr v-if="account" class="divider" />
-
+        <code class="endpoint">GET /profiles/account/{accountId}</code>
         <dl class="grid">
           <dt>Profile ID (numeric PK)</dt>
+          
           <dd>
             <strong
               :class="{ 'warning-text': profile.playerProfileId == null }"
@@ -817,4 +819,12 @@ dd {
 .list-row strong {
   color: #eee;
 }
+.endpoint {
+  background: #121a24;
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  color: var(--accent);
+}
+
 </style>
