@@ -1,39 +1,49 @@
 import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
 
-// /auth and /profiles now route through the API gateway (port 8080), which
-// validates the JWT centrally before forwarding to auth-service / profile-service.
-// Other services still proxy directly until their owners decide to register
-// them with the gateway.
+const gatewayTarget = process.env.VITE_API_GATEWAY_URL || "http://localhost:8080";
+
 const proxy = {
   "/auth": {
-    target: "http://localhost:8080",
+    target: gatewayTarget,
     changeOrigin: true,
   },
   "/profiles": {
-    target: "http://localhost:8080",
+    target: gatewayTarget,
     changeOrigin: true,
   },
-  "/bonuses": {
-    target: "http://localhost:8084",
-    changeOrigin: true,
-  },
-  "/games": {
-    target: "http://localhost:8082",
-    changeOrigin: true,
-  },
-  "/ledger": {
-    target: "http://localhost:8083",
+  "/api": {
+    target: gatewayTarget,
     changeOrigin: true,
   },
   "/compliance": {
-    target: "http://localhost:8087",
+    target: gatewayTarget,
+    changeOrigin: true,
+  },
+  "/ledger": {
+    target: gatewayTarget,
+    changeOrigin: true,
+  },
+  "/games": {
+    target: gatewayTarget,
+    changeOrigin: true,
+  },
+  "/bonuses": {
+    target: gatewayTarget,
     changeOrigin: true,
   },
 };
 
 export default defineConfig({
   plugins: [vue()],
-  server: { port: 5173, proxy },
-  preview: { port: 5173, proxy },
+  server: {
+    host: "0.0.0.0",
+    port: 5173,
+    proxy,
+  },
+  preview: {
+    host: "0.0.0.0",
+    port: 5173,
+    proxy,
+  },
 });

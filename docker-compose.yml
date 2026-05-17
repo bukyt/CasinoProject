@@ -14,16 +14,370 @@ services:
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
-      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
 
-  postgres:
-    image: postgres:15
+      KAFKA_LISTENERS: INTERNAL://0.0.0.0:29092,EXTERNAL://0.0.0.0:9092
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:29092,EXTERNAL://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+    healthcheck:
+      test: [ "CMD-SHELL", "kafka-broker-api-versions --bootstrap-server kafka:29092 >/dev/null 2>&1" ]
+      interval: 10s
+      timeout: 10s
+      retries: 12
+
+  frontend:
+    build:
+      context: ./casino-frontend
+      dockerfile: Dockerfile
+    container_name: casino-frontend
     ports:
-      - "5432:5432"
+      - "5173:5173"
+    depends_on:
+      - api-gateway
+    environment:
+      VITE_API_GATEWAY_URL: http://api-gateway:8080
+
+  api-gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile.service
+      args:
+        SERVICE_MODULE: api-gateway
+        SERVICE_PORT: 8080
+    container_name: api-gateway
+    ports:
+      - "8080:8080"
+    depends_on:
+      discovery-server:
+        condition: service_started
+    environment:
+      SERVER_PORT: 8080
+      EUREKA_DEFAULT_ZONE: http://discovery-server:8761/eureka/
+      DISCOVERY_SERVER_URI: http://discovery-server:8761
+      FRONTEND_ORIGIN: http://localhost:5173
+      JWT_SECRET: K7gNU3sdo4LER9GjjmemsGerhHwJh4aQHKjjjZVwzVXo=
+
+  auth-db:
+    image: postgres:15-alpine
+    container_name: auth-db
+    ports:
+      - "5436:5432"
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: authservice_db
+    volumes:
+      - auth-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d authservice_db" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  auth-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.service
+      args:
+        SERVICE_MODULE: auth-service
+        SERVICE_PORT: 8090
+    container_name: auth-service
+    ports:
+      - "8090:8090"
+    depends_on:
+      auth-db:
+        condition: service_healthy
+      discovery-server:
+        condition: service_started
+      kafka:
+        condition: service_started
+    environment:
+      SERVER_PORT: 8090
+
+      SPRING_DATASOURCE_URL: jdbc:postgresql://auth-db:5432/authservice_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+
+      EUREKA_DEFAULT_ZONE: http://discovery-server:8761/eureka/
+
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+
+      JWT_SECRET: K7gNU3sdo4LER9GjjmemsGerhHwJh4aQHKjjjZVwzVXo=
+      EVENTS_ACCOUNT_STATUS_TOPIC: auth.account-status
+
+  discovery-server:
+    build:
+      context: .
+      dockerfile: Dockerfile.service
+      args:
+        SERVICE_MODULE: discovery-server
+        SERVICE_PORT: 8761
+    container_name: discovery-server
+    ports:
+      - "8761:8761"
+    environment:
+      SERVER_PORT: 8761
+
+  compliance-db:
+    image: postgres:15-alpine
+    container_name: compliance-db
+    ports:
+      - "5435:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: compliance_db
+    volumes:
+      - compliance-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d compliance_db" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  compliance:
+    build:
+      context: .
+      dockerfile: Dockerfile.service
+      args:
+        SERVICE_MODULE: compliance
+        SERVICE_PORT: 8087
+    container_name: compliance
+    ports:
+      - "8087:8087"
+    depends_on:
+      compliance-db:
+        condition: service_healthy
+      discovery-server:
+        condition: service_started
+      kafka:
+        condition: service_started
+    environment:
+      SERVER_PORT: 8087
+
+      SPRING_DATASOURCE_URL: jdbc:postgresql://compliance-db:5432/compliance_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+
+      EUREKA_DEFAULT_ZONE: http://discovery-server:8761/eureka/
+
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+
+  payment:
+    build:
+      context: .
+      dockerfile: Dockerfile.service
+      args:
+        SERVICE_MODULE: payment
+        SERVICE_PORT: 8091
+    ports:
+      - "8091:8091"
+    depends_on:
+      payment-db:
+        condition: service_healthy
+      discovery-server:
+        condition: service_started
+    environment:
+      SERVER_PORT: 8091
+      SPRING_DATASOURCE_URL: jdbc:postgresql://payment-db:5432/payment_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      EUREKA_DEFAULT_ZONE: http://discovery-server:8761/eureka/
+
+  payment-db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: payment_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - payment-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d payment_db" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  profile-db:
+    image: postgres:15-alpine
+    container_name: profile-db
+    environment:
+      POSTGRES_DB: profileservice_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5437:5432"
+    volumes:
+      - profile-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d profileservice_db" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  profile-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.service
+      args:
+        SERVICE_MODULE: profile-service
+        SERVICE_PORT: 8086
+    container_name: profile-service
+    ports:
+      - "8086:8086"
+    environment:
+      SERVER_PORT: 8086
+
+      SPRING_DATASOURCE_URL: jdbc:postgresql://profile-db:5432/profileservice_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+
+      EUREKA_DEFAULT_ZONE: http://discovery-server:8761/eureka/
+
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+
+      AUTH_SERVICE_BASE_URL: http://auth-service:8090
+      AUTH_VERIFICATION_ENABLED: "true"
+
+      EVENTS_ACCOUNT_STATUS_TOPIC: auth.account-status
+    depends_on:
+      profile-db:
+        condition: service_healthy
+      discovery-server:
+        condition: service_started
+      auth-service:
+        condition: service_started
+      kafka:
+        condition: service_healthy
+
+  ledger-db:
+    image: postgres:15-alpine
+    container_name: ledger-db
+    environment:
       POSTGRES_DB: ledger_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5438:5432"
+    volumes:
+      - ledger-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d ledger_db" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  ledger:
+    build:
+      context: .
+      dockerfile: Dockerfile.service
+      args:
+        SERVICE_MODULE: ledger
+        SERVICE_PORT: 8083
+    container_name: ledger
+    ports:
+      - "8083:8083"
+    environment:
+      SERVER_PORT: 8083
+
+      SPRING_DATASOURCE_URL: jdbc:postgresql://ledger-db:5432/ledger_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+
+      EUREKA_DEFAULT_ZONE: http://discovery-server:8761/eureka/
+
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      SPRING_KAFKA_CONSUMER_GROUP_ID: ledgerService
+    depends_on:
+      ledger-db:
+        condition: service_healthy
+      discovery-server:
+        condition: service_started
+      kafka:
+        condition: service_healthy
+
+  game-db:
+    image: postgres:15-alpine
+    container_name: game-db
+    environment:
+      POSTGRES_DB: game_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5439:5432"
+    volumes:
+      - game-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d game_db" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  game:
+    build:
+      context: .
+      dockerfile: Dockerfile.service
+      args:
+        SERVICE_MODULE: game
+        SERVICE_PORT: 8082
+    container_name: game
+    ports:
+      - "8082:8082"
+    environment:
+      SERVER_PORT: 8082
+
+      SPRING_DATASOURCE_URL: jdbc:postgresql://game-db:5432/game_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+
+      EUREKA_DEFAULT_ZONE: http://discovery-server:8761/eureka/
+
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      SPRING_KAFKA_CONSUMER_GROUP_ID: game-service
+    depends_on:
+      game-db:
+        condition: service_healthy
+      discovery-server:
+        condition: service_started
+      kafka:
+        condition: service_healthy
+
+  bonus:
+    build:
+      context: .
+      dockerfile: Dockerfile.service
+      args:
+        SERVICE_MODULE: bonus
+        SERVICE_PORT: 8084
+    container_name: bonus
+    ports:
+      - "8084:8084"
+    environment:
+      SERVER_PORT: 8084
+
+      EUREKA_DEFAULT_ZONE: http://discovery-server:8761/eureka/
+
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      SPRING_KAFKA_CONSUMER_GROUP_ID: bonus-group
+    depends_on:
+      - discovery-server
+      - kafka
+
+volumes:
+  payment-db-data:
+  compliance-db-data:
+  auth-db-data:
+  profile-db-data:
+  ledger-db-data:
+  game-db-data:

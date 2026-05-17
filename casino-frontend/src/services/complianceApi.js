@@ -1,9 +1,24 @@
+import { getToken } from "../auth.js";
+
+function authHeaders() {
+  const token = getToken();
+
+  const headers = {
+    Accept: "application/json",
+    "Content-Type": "application/json",
+  };
+
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  return headers;
+}
+
 async function getJson(path) {
-  const response = await fetch(`${path}`, {
+  const response = await fetch(path, {
     method: "GET",
-    headers: {
-      Accept: "application/json",
-    },
+    headers: authHeaders(),
   });
 
   // Missing compliance profile should not necessarily break the whole HomeView.
@@ -54,12 +69,9 @@ export async function createComplianceProfileDevOnly(playerProfileId) {
 
   // TODO REMOVE: Dev-only fallback for local testing.
   // Do not create compliance profiles from the HomeView in production.
-  const response = await fetch(`/compliance`, {
+  const response = await fetch("/compliance", {
     method: "POST",
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/json",
-    },
+    headers: authHeaders(),
     body: JSON.stringify({
       playerProfileId,
 
