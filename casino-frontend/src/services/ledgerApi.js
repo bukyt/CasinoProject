@@ -11,7 +11,7 @@ function authHeaders() {
  * GET /ledger/player/{playerId}/balance
  */
 export async function fetchAccountBalance(playerId) {
-  const res = await fetch(`/api/ledger/player/${playerId}/balance`, {
+  const res = await fetch(`/ledger/player/${playerId}/balance`, {
     headers: authHeaders(),
   });
 
@@ -26,7 +26,7 @@ export async function fetchAccountBalance(playerId) {
  * This is the missing function causing your SyntaxError
  */
 export async function depositDebugFunds(playerId, amount) {
-  const res = await fetch(`/api/ledger/player/${playerId}/deposit`, {
+  const res = await fetch(`/ledger/player/${playerId}/deposit`, {
     method: 'POST',
     headers: authHeaders(),
     body: JSON.stringify({ amount: parseFloat(amount) })

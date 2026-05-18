@@ -14,7 +14,7 @@ function authHeaders() {
 export const fetchPlayerCredits = async (playerId) => {
   try {
     // Convert playerId to string to ensure it matches Java's String @PathVariable
-    const res = await fetch(`/api/bonuses/players/${String(playerId)}/credits`, {
+    const res = await fetch(`/bonuses/players/${String(playerId)}/credits`, {
       headers: authHeaders()
     });
 
@@ -34,7 +34,7 @@ export const fetchPlayerCredits = async (playerId) => {
  * This is the call that gives the +10 credits based on your new Java logic
  */
 export async function assignBonusToPlayer(bonusId, playerId) {
-  const res = await fetch(`/api/bonuses/${bonusId}/assign`, {
+  const res = await fetch(`/bonuses/${bonusId}/assign`, {
     method: 'POST',
     headers: authHeaders(),
     body: JSON.stringify({ 
@@ -51,7 +51,7 @@ export async function assignBonusToPlayer(bonusId, playerId) {
  */
 export async function debugAddCredits(playerId, amount = 50.0) {
   // Append the amount to the URL instead of the body
-  const res = await fetch(`/api/bonuses/players/${playerId}/debug-add?amount=${amount}`, {
+  const res = await fetch(`/bonuses/players/${playerId}/debug-add?amount=${amount}`, {
     method: 'POST',
     headers: authHeaders(),
     // body: JSON.stringify({ amount: amount }) // Remove this if using @RequestParam
@@ -68,7 +68,7 @@ export async function debugAddCredits(playerId, amount = 50.0) {
  * Lists all defined bonuses (Welcome Bonus, etc.)
  */
 export async function fetchBonuses() {
-  const res = await fetch('/api/bonuses', {
+  const res = await fetch('/bonuses', {
     headers: authHeaders(),
   });
   if (!res.ok) throw new Error(`Bonuses list HTTP ${res.status}`);
