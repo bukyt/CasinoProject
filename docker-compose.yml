@@ -86,8 +86,8 @@ services:
         SERVICE_MODULE: auth-service
         SERVICE_PORT: 8090
     container_name: auth-service
-    ports:
-      - "8090:8090"
+    expose:
+      - "8090"
     depends_on:
       auth-db:
         condition: service_healthy
@@ -231,8 +231,8 @@ services:
         SERVICE_MODULE: profile-service
         SERVICE_PORT: 8086
     container_name: profile-service
-    ports:
-      - "8086:8086"
+    expose:
+      - "8086"
     environment:
       SERVER_PORT: 8086
 
@@ -247,6 +247,7 @@ services:
 
       AUTH_SERVICE_BASE_URL: http://auth-service:8090
       AUTH_VERIFICATION_ENABLED: "true"
+      JWT_SECRET: K7gNU3sdo4LER9GjjmemsGerhHwJh4aQHKjjjZVwzVXo=
 
       EVENTS_ACCOUNT_STATUS_TOPIC: auth.account-status
     depends_on:
