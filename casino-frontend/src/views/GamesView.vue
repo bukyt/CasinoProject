@@ -7,7 +7,6 @@ import { fetchProfileByAccountId } from '../services/profileApi.js';
 
 const router = useRouter();
 const games = ref([]);
-const bonusBalance = ref(0);
 const playerId = ref(null); // Now reactive and starts null
 
 const fetchData = async () => {
@@ -32,11 +31,6 @@ const fetchData = async () => {
     // 3. Fetch Games list (Proxy '/games' -> :8082)
     const gRes = await fetch('/games');
     games.value = await gRes.json();
-
-    // 4. Fetch Credits using the real playerId (Proxy '/bonuses' -> :8084)
-    const cRes = await fetch(`/bonuses/players/${playerId.value}/credits`);
-    const cData = await cRes.json();
-    bonusBalance.value = cData.balance;
   } catch (err) {
     console.error("Lobby load failed", err);
   }
@@ -77,17 +71,6 @@ const createSession = async (gameId) => {
   }
 };
 
-const addDebugCredits = async () => {
-  if (!playerId.value) return;
-  
-  await fetch(`/bonuses/players/${playerId.value}/debug-add`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ amount: 50.0 })
-  });
-  fetchData(); // Refresh balance
-};
-
 onMounted(fetchData);
 </script>
 
@@ -95,14 +78,6 @@ onMounted(fetchData);
   <div class="lobby">
     <header class="lobby-header">
       <h1>Casino Floor</h1>
-      <div v-if="playerId" class="user-info">
-        <div class="balance-card">
-          <span class="label">Bonus Credits:</span>
-          <span class="amount">${{ bonusBalance.toFixed(2) }}</span>
-        </div>
-        <button @click="addDebugCredits" class="debug-btn">+ Add $50</button>
-      </div>
-      <div v-else>Loading profile...</div>
     </header>
 
     <div class="game-grid">

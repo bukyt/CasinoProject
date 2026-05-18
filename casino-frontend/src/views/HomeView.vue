@@ -262,7 +262,6 @@ import { computed, onMounted, ref } from "vue";
 import { getAccountIdFromToken, getUsernameFromToken } from "../auth.js";
 import { fetchProfileByAccountId } from "../services/profileApi.js";
 import { fetchCurrentAccount } from "../services/authApi.js";
-import { fetchPlayerCredits } from "../services/bonusApi.js";
 import {
   fetchComplianceProfile,
   fetchPlayerEligibility,
@@ -368,14 +367,6 @@ const refreshData = async () => {
     profile.value = profileData;
 
     const internalNumericId = profileData.playerProfileId;
-
-    if (internalNumericId !== undefined && internalNumericId !== null) {
-      credits.value = await fetchPlayerCredits(internalNumericId);
-    } else {
-      console.error("playerProfileId missing from profile JSON.", profileData);
-      loadError.value =
-        "Profile synced, but playerProfileId is missing. Ensure profile-service returns playerProfileId (integer).";
-    }
   } catch (e) {
     console.error("HomeView Sync Error:", e);
     loadError.value =

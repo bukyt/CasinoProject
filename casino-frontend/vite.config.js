@@ -30,6 +30,10 @@ const proxy = {
     target: "http://localhost:8087",
     changeOrigin: true,
   },
+  "/wallet": {
+    target: "http://localhost:8085",
+    changeOrigin: true,
+  },
 };
 
 export default defineConfig({

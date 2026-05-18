@@ -34,8 +34,10 @@ public class BonusClient {
         System.out.println("BONUS CONSUME REQUEST -> " + url);
 
         try {
-            restTemplate.postForObject(url, null, Object.class);
-            System.out.println("BONUS CONSUME OK");
+            String response = restTemplate.postForObject(url, null, String.class);
+
+            System.out.println("BONUS CONSUME OK -> " + response);
+
         } catch (Exception e) {
             System.out.println("BONUS CONSUME ERROR -> " + e.getMessage());
         }
@@ -47,8 +49,10 @@ public class BonusClient {
         System.out.println("BONUS GRANT REQUEST -> " + url);
 
         try {
-            restTemplate.postForObject(url, null, Object.class);
-            System.out.println("BONUS GRANT OK");
+            String response = restTemplate.postForObject(url, null, String.class);
+
+            System.out.println("BONUS GRANT OK -> " + response);
+
         } catch (Exception e) {
             System.out.println("BONUS GRANT ERROR -> " + e.getMessage());
         }
