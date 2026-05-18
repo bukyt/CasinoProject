@@ -1,5 +1,6 @@
 package com.casino.game;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -8,13 +9,18 @@ import org.springframework.web.client.RestTemplate;
 public class BonusClient {
 
     private final RestTemplate restTemplate;
+    private final String baseUrl;
 
-    public BonusClient(RestTemplate restTemplate) {
+    // FIX: Inject the base URL with environment property parsing and a local fallback
+    public BonusClient(RestTemplate restTemplate,
+                       @Value("${services.bonus.base-url:http://localhost:8084}") String bonusBaseUrl) {
         this.restTemplate = restTemplate;
+        this.baseUrl = bonusBaseUrl + "/bonuses/players/";
     }
 
     public boolean hasActiveBonus(String playerId) {
-        String url = "http://localhost:8084/bonuses/players/" + playerId + "/has-active-bonus";
+        // FIX: Dynamic string concatenation built from your Docker environment properties
+        String url = baseUrl + playerId + "/has-active-bonus";
 
         System.out.println("BONUS CHECK REQUEST -> " + url);
 
@@ -29,30 +35,26 @@ public class BonusClient {
     }
 
     public void consumeBonus(String playerId) {
-        String url = "http://localhost:8084/bonuses/players/" + playerId + "/consume";
+        String url = baseUrl + playerId + "/consume";
 
         System.out.println("BONUS CONSUME REQUEST -> " + url);
 
         try {
             String response = restTemplate.postForObject(url, null, String.class);
-
             System.out.println("BONUS CONSUME OK -> " + response);
-
         } catch (Exception e) {
             System.out.println("BONUS CONSUME ERROR -> " + e.getMessage());
         }
     }
 
     public void grantFreeSpin(String playerId) {
-        String url = "http://localhost:8084/bonuses/players/" + playerId + "/grant-free-spin";
+        String url = baseUrl + playerId + "/grant-free-spin";
 
         System.out.println("BONUS GRANT REQUEST -> " + url);
 
         try {
             String response = restTemplate.postForObject(url, null, String.class);
-
             System.out.println("BONUS GRANT OK -> " + response);
-
         } catch (Exception e) {
             System.out.println("BONUS GRANT ERROR -> " + e.getMessage());
         }

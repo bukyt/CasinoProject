@@ -135,9 +135,13 @@ const addDebugFunds = async () => {
   if (!playerId.value) return
   
   try {
+    // 1. Add funds to the remote wallet ledger
     const updatedWallet = await depositFunds(playerId.value, 100.00)
     walletBalance.value = Number(updatedWallet.availableBalance ?? 0)
     console.log("Debug funds added successfully!", updatedWallet)
+
+    // 2. FIX: Force the backend game session to update its local internal balance cache
+    await syncState() 
   } catch (err) {
     console.error("Failed to add debug funds", err)
   }

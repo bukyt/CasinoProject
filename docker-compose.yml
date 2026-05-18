@@ -345,6 +345,11 @@ services:
 
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       SPRING_KAFKA_CONSUMER_GROUP_ID: game-service
+
+      # ADDED: Inter-container communication routing flags
+      SERVICES_WALLET_BASE_URL: http://wallet:8085
+      SERVICES_BONUS_BASE_URL: http://bonus:8084
+
     depends_on:
       game-db:
         condition: service_healthy
@@ -352,6 +357,10 @@ services:
         condition: service_started
       kafka:
         condition: service_healthy
+      wallet:
+        condition: service_started
+      bonus:
+        condition: service_started
 
   bonus:
     build:
