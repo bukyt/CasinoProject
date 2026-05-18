@@ -32,6 +32,10 @@ const proxy = {
     target: gatewayTarget,
     changeOrigin: true,
   },
+  "/wallet": {
+    target: gatewayTarget,
+    changeOrigin: true,
+  },
 };
 
 export default defineConfig({

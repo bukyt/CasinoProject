@@ -51,9 +51,16 @@ async function submit() {
   loading.value = true;
   try {
     await register(username.value, password.value);
-    router.push('/');
   } catch (e) {
     error.value = e.message || 'Registration failed';
+    loading.value = false;
+    return;
+  }
+
+  try {
+    await router.push('/complete-profile');
+  } catch (e) {
+    console.error('Post-registration navigation failed:', e);
   } finally {
     loading.value = false;
   }
