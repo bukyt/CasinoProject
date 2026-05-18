@@ -56,6 +56,8 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { fetchWallet, depositFunds } from '../services/wallet.js' 
+// 1. FIX: Import getToken to securely authorize requests
+import { getToken } from '../auth.js'
 
 const route = useRoute()
 const router = useRouter()
@@ -72,13 +74,32 @@ const formattedWalletBalance = computed(() => {
   return Number(walletBalance.value ?? 0).toFixed(2)
 })
 
+// 2. FIX: Dynamic helper function to generate authorization payload
+const getHeaders = (extra = {}) => {
+  const token = getToken()
+  return {
+    ...extra,
+    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+  }
+}
+
 /**
  * SINGLE SOURCE OF TRUTH: GAME SESSION + WALLET STATE SYNC
  */
 const fetchSession = async () => {
   try {
-    const res = await fetch(`/games/sessions/${sessionId}`)
-    if (!res.ok) return
+    // 3. FIX: Add authorization headers here
+    const res = await fetch(`/games/sessions/${sessionId}`, {
+      headers: getHeaders()
+    })
+    
+    if (!res.ok) {
+      if (res.status === 401) {
+        console.error("Game session unauthorized. Bailing to login.");
+        router.push('/login')
+      }
+      return
+    }
 
     const data = await res.json()
 
@@ -97,7 +118,6 @@ const fetchSession = async () => {
 const syncWalletState = async (id) => {
   try {
     const walletData = await fetchWallet(id)
-    // FIX: Changed .balance to .availableBalance to match Spring's serialized Record
     walletBalance.value = Number(walletData.availableBalance ?? 0)
   } catch (err) {
     console.error("Could not synchronize remote wallet data assets", err)
@@ -116,7 +136,6 @@ const addDebugFunds = async () => {
   
   try {
     const updatedWallet = await depositFunds(playerId.value, 100.00)
-    // FIX: Changed .balance to .availableBalance here as well
     walletBalance.value = Number(updatedWallet.availableBalance ?? 0)
     console.log("Debug funds added successfully!", updatedWallet)
   } catch (err) {
@@ -133,19 +152,28 @@ const roll = async () => {
   const betAmount = 10.0
 
   try {
+    // 1. Fire the bet request to the backend
     const res = await fetch(`/games/sessions/${sessionId}/bets`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({ amount: betAmount })
     })
 
+    if (!res.ok) throw new Error(`Bet failed: ${res.status}`)
+
     const result = await res.json()
 
+    // 2. FIX: Fetch the fresh state from the server IMMEDIATELY.
+    // This turns off 'hasActiveBonus' and updates balances instantly in the background data layer.
+    const stateSyncPromise = syncState()
+
+    // 3. Keep the visual spin delay separate for layout purposes
     setTimeout(async () => {
+      // 4. FIX: Ensure the network sync has completed before we drop the spinning screen flags
+      await stateSyncPromise 
+
       lastResult.value = result
       spinning.value = false
-
-      await syncState()
     }, 800)
 
   } catch (err) {
@@ -156,8 +184,10 @@ const roll = async () => {
 
 const exit = async () => {
   if (sessionId) {
+    // 5. FIX: Secure the close session patch notification
     await fetch(`/games/sessions/${sessionId}/close`, {
-      method: 'PATCH'
+      method: 'PATCH',
+      headers: getHeaders()
     })
   }
   router.push('/games')
