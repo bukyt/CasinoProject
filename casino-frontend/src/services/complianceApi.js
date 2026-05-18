@@ -15,91 +15,174 @@ function authHeaders() {
   return headers;
 }
 
-async function getJson(path) {
-  const response = await fetch(path, {
-    method: "GET",
-    headers: authHeaders(),
-  });
-
-  // Missing compliance profile should not necessarily break the whole HomeView.
-  if (response.status === 404) {
+async function readJsonResponse(response, fallbackMessage, options = {}) {
+  if (options.nullOn404 && response.status === 404) {
     return null;
   }
 
+  if (response.status === 204) {
+    return null;
+  }
+
+  let body = null;
+
+  try {
+    body = await response.json();
+  } catch {
+    // Ignore non-JSON body.
+  }
+
   if (!response.ok) {
-    let message = `Compliance API request failed with status ${response.status}`;
+    const message =
+      body?.message ||
+      body?.error ||
+      `${fallbackMessage}. Status: ${response.status}`;
 
-    try {
-      const body = await response.json();
-      message = body.message || body.error || message;
-    } catch {
-      // Ignore non-JSON error body.
-    }
+    const error = new Error(message);
 
-    throw new Error(message);
+    error.status = response.status;
+    error.payload = body;
+    error.code = body?.code || body?.errorCode || "";
+    error.data =
+      body?.data ||
+      body?.errors ||
+      body?.fieldErrors ||
+      body?.violations ||
+      null;
+
+    throw error;
   }
 
-  return response.json();
+  return body;
 }
 
-export function fetchComplianceProfile(playerProfileId) {
-  if (playerProfileId === undefined || playerProfileId === null) {
-    throw new Error("playerProfileId is required to fetch compliance profile.");
-  }
-
-  return getJson(`/compliance/${encodeURIComponent(playerProfileId)}`);
-}
-
-export function fetchPlayerEligibility(playerProfileId) {
-  if (playerProfileId === undefined || playerProfileId === null) {
-    throw new Error("playerProfileId is required to fetch eligibility.");
-  }
-
-  return getJson(
-    `/compliance/${encodeURIComponent(playerProfileId)}/eligibility`
-  );
-}
-
-export async function createComplianceProfileDevOnly(playerProfileId) {
-  if (playerProfileId === undefined || playerProfileId === null) {
-    throw new Error(
-      "playerProfileId is required to create compliance profile."
-    );
-  }
-
-  // TODO REMOVE: Dev-only fallback for local testing.
-  // Do not create compliance profiles from the HomeView in production.
+export async function createComplianceProfile(body) {
   const response = await fetch("/compliance", {
     method: "POST",
     headers: authHeaders(),
-    body: JSON.stringify({
-      playerProfileId,
-
-      // These defaults assume your CreateComplianceProfileDTO accepts these fields.
-      // Adjust if your DTO has a different shape.
-      ageVerified: true,
-      selfExcluded: false,
-      riskLevel: "LOW",
-    }),
+    body: JSON.stringify(body),
   });
 
-  if (response.status === 409) {
-    // Profile was created elsewhere between GET and POST.
-    return fetchComplianceProfile(playerProfileId);
-  }
+  return readJsonResponse(response, "Create compliance profile failed");
+}
 
-  if (!response.ok) {
-    let message = `Failed to create dev compliance profile. Status: ${response.status}`;
-
-    try {
-      const body = await response.json();
-      message = body.message || body.error || message;
-    } catch {
-      // Ignore non-JSON error body.
+export async function fetchComplianceProfile(playerProfileId) {
+  const response = await fetch(
+    `/compliance/${encodeURIComponent(playerProfileId)}`,
+    {
+      method: "GET",
+      headers: authHeaders(),
     }
+  );
 
-    throw new Error(message);
-  }
+  return readJsonResponse(response, "Fetch compliance profile failed", {
+    nullOn404: true,
+  });
+}
 
-  return response.json();
+export async function modifyComplianceProfile(playerProfileId, body) {
+  const response = await fetch(
+    `/compliance/${encodeURIComponent(playerProfileId)}`,
+    {
+      method: "PATCH",
+      headers: authHeaders(),
+      body: JSON.stringify(body),
+    }
+  );
+
+  return readJsonResponse(response, "Modify compliance profile failed");
+}
+
+export async function fetchPlayerEligibility(playerProfileId) {
+  const response = await fetch(
+    `/compliance/${encodeURIComponent(playerProfileId)}/eligibility`,
+    {
+      method: "GET",
+      headers: authHeaders(),
+    }
+  );
+
+  return readJsonResponse(response, "Fetch eligibility failed", {
+    nullOn404: true,
+  });
+}
+
+export async function createComplianceFlag(playerProfileId, body) {
+  const response = await fetch(
+    `/compliance/${encodeURIComponent(playerProfileId)}/flag`,
+    {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify(body),
+    }
+  );
+
+  return readJsonResponse(response, "Create compliance flag failed");
+}
+
+export async function modifyComplianceFlag(playerProfileId, flagId, body) {
+  const response = await fetch(
+    `/compliance/${encodeURIComponent(
+      playerProfileId
+    )}/flag/${encodeURIComponent(flagId)}`,
+    {
+      method: "PATCH",
+      headers: authHeaders(),
+      body: JSON.stringify(body),
+    }
+  );
+
+  return readJsonResponse(response, "Modify compliance flag failed");
+}
+
+export async function createComplianceLimit(playerProfileId, body) {
+  const response = await fetch(
+    `/compliance/${encodeURIComponent(playerProfileId)}/limits`,
+    {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify(body),
+    }
+  );
+
+  return readJsonResponse(response, "Create compliance limit failed");
+}
+
+export async function fetchComplianceLimits(playerProfileId) {
+  const response = await fetch(
+    `/compliance/${encodeURIComponent(playerProfileId)}/limits`,
+    {
+      method: "GET",
+      headers: authHeaders(),
+    }
+  );
+
+  return readJsonResponse(response, "Fetch compliance limits failed", {
+    nullOn404: true,
+  });
+}
+
+export async function modifyComplianceLimit(playerProfileId, limitId, body) {
+  const response = await fetch(
+    `/compliance/${encodeURIComponent(
+      playerProfileId
+    )}/limits/${encodeURIComponent(limitId)}`,
+    {
+      method: "PATCH",
+      headers: authHeaders(),
+      body: JSON.stringify(body),
+    }
+  );
+
+  return readJsonResponse(response, "Modify compliance limit failed");
+}
+
+// Optional local/dev helper.
+export async function createComplianceProfileDevOnly(playerProfileId) {
+  return createComplianceProfile({
+    playerProfileId,
+    ageVerified: true,
+    selfExcluded: false,
+    riskLevel: "LOW",
+  });
 }

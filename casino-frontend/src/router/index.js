@@ -10,6 +10,8 @@ import GamesView from '../views/GamesView.vue';
 import GameView from '../views/GameView.vue';
 import SettingsView from '../views/SettingsView.vue';
 import AdminView from '../views/AdminView.vue';
+import AdminPaymentsView from '../views/AdminPaymentsView.vue';
+import AdminComplianceView from '../views/AdminComplianceView.vue';
 
 const routes = [
   {
@@ -43,6 +45,18 @@ const routes = [
     path: '/admin',
     name: 'Admin',
     component: AdminView,
+    meta: { requiresAuth: true, requiresProfile: false, requiresAdmin: true },
+  },
+  {
+    path: '/payments',
+    name: 'AdminPayments',
+    component: AdminPaymentsView,
+    meta: { requiresAuth: true, requiresProfile: false, requiresAdmin: true },
+  },
+  {
+    path: '/admin/compliance',
+    name: 'AdminCompliance',
+    component: AdminComplianceView,
     meta: { requiresAuth: true, requiresProfile: false, requiresAdmin: true },
   },
   {
