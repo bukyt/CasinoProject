@@ -1,0 +1,7 @@
+### Debug: Add $100 to Player 3 Wallet
+POST http://localhost:8085/wallet/debit/3
+Content-Type: application/json
+
+{
+  "amount": 100.00
+}

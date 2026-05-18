@@ -457,24 +457,7 @@ const refreshData = async () => {
     const internalNumericId = profileData.playerProfileId;
 
     if (internalNumericId !== undefined && internalNumericId !== null) {
-      const [bonusResult, walletResult] = await Promise.allSettled([
-        fetchPlayerCredits(internalNumericId),
-        fetchWallet(internalNumericId),
-      ]);
-
-      if (bonusResult.status === "fulfilled") {
-        credits.value = bonusResult.value;
-      } else {
-        console.warn("Bonus credits fetch failed:", bonusResult.reason);
-        credits.value = 0;
-      }
-
-      if (walletResult.status === "fulfilled") {
-        walletFunds.value = walletResult.value.availableBalance;
-      } else {
-        console.warn("Wallet fetch failed:", walletResult.reason);
-        walletError.value = "Wallet unavailable";
-      }
+      credits.value = await fetchPlayerCredits(internalNumericId);
     } else {
       console.error("playerProfileId missing from profile JSON.", profileData);
       loadError.value =

@@ -3,6 +3,20 @@
     <div class="header">
       <button @click="exit" class="exit-btn">← Back to Lobby</button>
 
+      <div class="wallet-group">
+        <span class="wallet-display">
+          💳 Real Wallet: ${{ formattedWalletBalance }}
+        </span>
+        <!-- DEBUG BUTTON -->
+        <button 
+          @click="addDebugFunds" 
+          :disabled="!playerId" 
+          class="debug-btn"
+        >
+          ⚡ Debug: Add $100
+        </button>
+      </div>
+
       <div class="bonus-status" v-if="hasActiveBonus">
         🎁 FREE SPIN READY
       </div>
@@ -32,7 +46,6 @@
     </div>
 
     <div class="footer-stats">
-      <p>Credits: ${{ formattedCredits }}</p>
       <p>Session ID: {{ sessionId }}</p>
       <p v-if="playerId">Player ID: {{ playerId }}</p>
     </div>
@@ -42,6 +55,7 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { fetchWallet, depositFunds } from '../services/wallet.js' 
 
 const route = useRoute()
 const router = useRouter()
@@ -51,15 +65,15 @@ const sessionId = route.params.sessionId || null
 const playerId = ref(null)
 const spinning = ref(false)
 const lastResult = ref(null)
-const credits = ref(0)
+const walletBalance = ref(0) 
 const hasActiveBonus = ref(false)
 
-const formattedCredits = computed(() => {
-  return Number(credits.value ?? 0).toFixed(2)
+const formattedWalletBalance = computed(() => {
+  return Number(walletBalance.value ?? 0).toFixed(2)
 })
 
 /**
- * SINGLE SOURCE OF TRUTH: GAME SESSION
+ * SINGLE SOURCE OF TRUTH: GAME SESSION + WALLET STATE SYNC
  */
 const fetchSession = async () => {
   try {
@@ -69,18 +83,45 @@ const fetchSession = async () => {
     const data = await res.json()
 
     playerId.value = String(data.playerProfileId)
-
-    // IMPORTANT: backend must provide these fields
-    credits.value = Number(data.balance ?? 0)
     hasActiveBonus.value = Boolean(data.hasActiveBonus ?? false)
+
+    if (data.playerProfileId) {
+      await syncWalletState(data.playerProfileId)
+    }
 
   } catch (e) {
     console.error("Failed to fetch session", e)
   }
 }
 
+const syncWalletState = async (id) => {
+  try {
+    const walletData = await fetchWallet(id)
+    // FIX: Changed .balance to .availableBalance to match Spring's serialized Record
+    walletBalance.value = Number(walletData.availableBalance ?? 0)
+  } catch (err) {
+    console.error("Could not synchronize remote wallet data assets", err)
+  }
+}
+
 const syncState = async () => {
   await fetchSession()
+}
+
+/**
+ * DEBUG FEATURE: Call wallet microservice debit endpoint directly 
+ */
+const addDebugFunds = async () => {
+  if (!playerId.value) return
+  
+  try {
+    const updatedWallet = await depositFunds(playerId.value, 100.00)
+    // FIX: Changed .balance to .availableBalance here as well
+    walletBalance.value = Number(updatedWallet.availableBalance ?? 0)
+    console.log("Debug funds added successfully!", updatedWallet)
+  } catch (err) {
+    console.error("Failed to add debug funds", err)
+  }
 }
 
 const roll = async () => {
@@ -126,3 +167,27 @@ onMounted(async () => {
   await syncState()
 })
 </script>
+
+<style scoped>
+.wallet-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.debug-btn {
+  background-color: #e67e22;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+}
+.debug-btn:disabled {
+  background-color: #7f8c8d;
+  cursor: not-allowed;
+}
+.debug-btn:hover:not(:disabled) {
+  background-color: #d35400;
+}
+</style>

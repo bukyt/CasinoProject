@@ -1,19 +1,50 @@
-### Base URL
-@baseUrl = http://localhost:8082
+##############################################
+# BASE URLS
+##############################################
+
+@gameUrl = http://localhost:8082
+@walletUrl = http://localhost:8085
 
 ##############################################
-### 1. LIST GAMES
+# 1. LIST GAMES
 ##############################################
-GET {{baseUrl}}/games
+GET {{gameUrl}}/games
 Accept: application/json
 
 ###
 
 ##############################################
-### 2. CREATE SESSION
-# Your controller uses AtomicLong, so the ID will be "session-1" on first run
+# 2. CREATE WALLET
 ##############################################
-POST {{baseUrl}}/games/sessions
+POST {{walletUrl}}/wallet/create/123
+Accept: application/json
+
+###
+
+##############################################
+# 3. ADD FUNDS TO WALLET (DEBIT = ADD MONEY)
+##############################################
+POST {{walletUrl}}/wallet/debit/123
+Content-Type: application/json
+
+{
+  "amount": 100.00
+}
+
+###
+
+##############################################
+# 4. CHECK WALLET
+##############################################
+GET {{walletUrl}}/wallet/123
+Accept: application/json
+
+###
+
+##############################################
+# 5. CREATE GAME SESSION
+##############################################
+POST {{gameUrl}}/games/sessions
 Content-Type: application/json
 
 {
@@ -24,14 +55,15 @@ Content-Type: application/json
 
 ###
 
-# IMPORTANT: Look at the response from step 2. 
-# If it's your first run, it's session-1.
-@sessionId = session-7
+##############################################
+# IMPORTANT: update after response
+# Example:
+@sessionId = session-1
 
 ##############################################
-### 3. PLACE BET (HAPPY PATH)
+# 6. PLACE BET (WALLET CREDIT + DEBIT FLOW INSIDE GAME)
 ##############################################
-POST {{baseUrl}}/games/sessions/{{sessionId}}/bets
+POST {{gameUrl}}/games/sessions/{{sessionId}}/bets
 Content-Type: application/json
 
 {
@@ -41,25 +73,31 @@ Content-Type: application/json
 ###
 
 ##############################################
-### 4. GET SESSION (PROVE PERSISTENCE)
-# The balance should now be 90.0 (loss) or 110.0 (win)
-# The "bets" list should NOT be empty.
+# 7. GET SESSION (VERIFY BET HISTORY ONLY)
 ##############################################
-GET {{baseUrl}}/games/sessions/{{sessionId}}
+GET {{gameUrl}}/games/sessions/{{sessionId}}
 Accept: application/json
 
 ###
 
 ##############################################
-### 5. CLOSE SESSION
+# 8. CLOSE SESSION
 ##############################################
-PATCH {{baseUrl}}/games/sessions/{{sessionId}}/close
-Content-Type: application/json
+PATCH {{gameUrl}}/games/sessions/{{sessionId}}/close
+Accept: application/json
 
 ###
 
 ##############################################
-### 6. VERIFY LEDGER (8083)
+# 9. FINAL WALLET CHECK (MONEY IS SOURCE OF TRUTH)
+##############################################
+GET {{walletUrl}}/wallet/123
+Accept: application/json
+
+###
+
+##############################################
+# 10. LEDGER CHECK (IF YOU STILL USE IT)
 ##############################################
 GET http://localhost:8083/ledger/player/123/balance
 Accept: application/json
