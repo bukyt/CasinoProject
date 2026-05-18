@@ -27,6 +27,8 @@ public class ComplianceService {
 
     private final ComplianceProfileRepository complianceProfileRepository;
     private final ComplianceFlagRepository complianceFlagRepository;
+    private final ComplianceEventProducer complianceEventProducer;
+    private final ComplianceRiskLevelCalculator complianceRiskLevelCalculator;
 
     @Transactional
     public ComplianceProfileDto createComplianceProfile(Long playerProfileId) {
@@ -48,6 +50,12 @@ public class ComplianceService {
 
         ComplianceProfile savedProfile = complianceProfileRepository.save(newProfile);
 
+        complianceEventProducer.publishStatusChanged(
+            savedProfile.getPlayerProfileId(),
+            savedProfile.isSelfExcluded(),
+            savedProfile.getRiskLevel()
+        );
+
         return toDto(savedProfile);
     }
 
@@ -60,7 +68,6 @@ public class ComplianceService {
         return toDto(profile);
     }
 
-    @Transactional
     public ComplianceProfileDto modifyComplianceProfile(
         Long playerId,
         ModifyComplianceProfileDTO request
@@ -69,39 +76,53 @@ public class ComplianceService {
             .findFirstByPlayerProfileId(playerId)
             .orElseThrow(() -> new ComplianceProfileMissingException(playerId));
 
+        boolean previousSelfExcluded = profile.isSelfExcluded();
+        ComplianceProfileRiskLevel previousRiskLevel = profile.getRiskLevel();
+
         OffsetDateTime now = OffsetDateTime.now();
 
         if (request.ageVerified() != null) {
             profile.setAgeVerified(request.ageVerified());
-
-            // Optional later:
-            // if ageVerified == false, create NO_AGE_VERIFICATION flag
-            // if ageVerified == true, resolve NO_AGE_VERIFICATION flag
         }
 
+        boolean flagSideEffectMayAffectRiskLevel = false;
+
         if (request.selfExcluded() != null) {
-            boolean previousSelfExcluded = profile.isSelfExcluded();
             boolean newSelfExcluded = request.selfExcluded();
 
             profile.setSelfExcluded(newSelfExcluded);
 
             if (!previousSelfExcluded && newSelfExcluded) {
-                createFlagIfNoUnresolvedFlagOfTypeExists(
-                    profile,
-                    ComplianceFlagType.SELF_EXCLUSION,
-                    ComplianceFlagSeverity.HIGH,
-                    now
-                );
+                flagSideEffectMayAffectRiskLevel =
+                    createFlagIfNoUnresolvedFlagOfTypeExists(
+                        profile,
+                        ComplianceFlagType.SELF_EXCLUSION,
+                        ComplianceFlagSeverity.HIGH,
+                        now
+                    );
             }
 
             if (previousSelfExcluded && !newSelfExcluded) {
-                resolveUnresolvedFlagsOfType(
-                    profile.getComplianceId(),
-                    ComplianceFlagType.SELF_EXCLUSION,
-                    ComplianceFlagSeverity.RESOLVED_ADMIN,
-                    now
-                );
+                flagSideEffectMayAffectRiskLevel =
+                    resolveUnresolvedFlagsOfType(
+                        profile.getComplianceId(),
+                        ComplianceFlagType.SELF_EXCLUSION,
+                        ComplianceFlagSeverity.RESOLVED_ADMIN,
+                        now
+                    );
             }
+        }
+
+        /*
+         * If self-exclusion created/resolved flags, risk level can change as a side effect.
+         * But if the request explicitly sets riskLevel, let the explicit request win.
+         */
+        if (flagSideEffectMayAffectRiskLevel && request.riskLevel() == null) {
+            profile.setRiskLevel(
+                complianceRiskLevelCalculator.calculateFromUnresolvedFlags(
+                    profile.getComplianceId()
+                )
+            );
         }
 
         if (request.riskLevel() != null) {
@@ -126,11 +147,19 @@ public class ComplianceService {
 
         ComplianceProfile savedProfile = complianceProfileRepository.save(profile);
 
+        complianceEventProducer.publishStatusChangedIfChanged(
+            savedProfile.getPlayerProfileId(),
+            previousSelfExcluded,
+            previousRiskLevel,
+            savedProfile.isSelfExcluded(),
+            savedProfile.getRiskLevel()
+        );
+
         return toDto(savedProfile);
     }
 
 
-    private void createFlagIfNoUnresolvedFlagOfTypeExists(
+    private boolean createFlagIfNoUnresolvedFlagOfTypeExists(
         ComplianceProfile profile,
         ComplianceFlagType type,
         ComplianceFlagSeverity severity,
@@ -144,9 +173,12 @@ public class ComplianceService {
             .stream()
             .anyMatch(this::isUnresolved);
 
-        if (!unresolvedFlagExists) {
-            createFlag(profile, type, severity, now);
+        if (unresolvedFlagExists) {
+            return false;
         }
+
+        createFlag(profile, type, severity, now);
+        return true;
     }
 
     private void createFlag(
@@ -162,10 +194,10 @@ public class ComplianceService {
         flag.setCreatedDate(now);
         flag.setResolvedDate(null);
 
-        complianceFlagRepository.save(flag);
+        complianceFlagRepository.saveAndFlush(flag);
     }
 
-    private void resolveUnresolvedFlagsOfType(
+    private boolean resolveUnresolvedFlagsOfType(
         Long complianceId,
         ComplianceFlagType type,
         ComplianceFlagSeverity resolvedSeverity,
@@ -177,12 +209,18 @@ public class ComplianceService {
             .filter(this::isUnresolved)
             .toList();
 
+        if (flagsToResolve.isEmpty()) {
+            return false;
+        }
+
         flagsToResolve.forEach(flag -> {
             flag.setSeverity(resolvedSeverity);
             flag.setResolvedDate(now);
         });
 
-        complianceFlagRepository.saveAll(flagsToResolve);
+        complianceFlagRepository.saveAllAndFlush(flagsToResolve);
+
+        return true;
     }
 
     private boolean isUnresolved(ComplianceFlag flag) {

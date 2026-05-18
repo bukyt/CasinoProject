@@ -28,6 +28,8 @@ public class FlagService {
 
     private final ComplianceFlagRepository complianceFlagRepository;
     private final ComplianceProfileRepository complianceProfileRepository;
+    private final ComplianceEventProducer complianceEventProducer;
+    private final ComplianceRiskLevelCalculator complianceRiskLevelCalculator;
 
     @Transactional
     public ComplianceFlagDto createComplianceFlag(
@@ -35,6 +37,9 @@ public class FlagService {
         CreateComplianceFlagDTO request
     ) {
         ComplianceProfile profile = getComplianceProfileOrThrow(playerId);
+
+        boolean previousSelfExcluded = profile.isSelfExcluded();
+        ComplianceProfileRiskLevel previousRiskLevel = profile.getRiskLevel();
 
         validateCreateRequest(request);
 
@@ -57,7 +62,15 @@ public class FlagService {
         ComplianceFlag savedFlag = complianceFlagRepository.saveAndFlush(flag);
 
         updateProfileAfterFlagChange(profile, now);
-        complianceProfileRepository.save(profile);
+        ComplianceProfile savedProfile = complianceProfileRepository.save(profile);
+
+        complianceEventProducer.publishStatusChangedIfChanged(
+            savedProfile.getPlayerProfileId(),
+            previousSelfExcluded,
+            previousRiskLevel,
+            savedProfile.isSelfExcluded(),
+            savedProfile.getRiskLevel()
+        );
 
         return toDto(savedFlag);
     }
@@ -69,6 +82,9 @@ public class FlagService {
         ModifyComplianceFlagDTO request
     ) {
         ComplianceProfile profile = getComplianceProfileOrThrow(playerId);
+
+        boolean previousSelfExcluded = profile.isSelfExcluded();
+        ComplianceProfileRiskLevel previousRiskLevel = profile.getRiskLevel();
 
         ComplianceFlag flag = complianceFlagRepository
             .findByFlagIdAndComplianceProfile_ComplianceId(
@@ -120,7 +136,15 @@ public class FlagService {
         ComplianceFlag savedFlag = complianceFlagRepository.saveAndFlush(flag);
 
         updateProfileAfterFlagChange(profile, now);
-        complianceProfileRepository.save(profile);
+        ComplianceProfile savedProfile = complianceProfileRepository.save(profile);
+
+        complianceEventProducer.publishStatusChangedIfChanged(
+            savedProfile.getPlayerProfileId(),
+            previousSelfExcluded,
+            previousRiskLevel,
+            savedProfile.isSelfExcluded(),
+            savedProfile.getRiskLevel()
+        );
 
         return toDto(savedFlag);
     }
