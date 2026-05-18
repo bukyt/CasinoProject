@@ -5,7 +5,8 @@ async function fail(res, context) {
   throw new Error(await readApiError(res, context));
 }
 
-function authHeaders(extra = {}) {
+
+export function authHeaders(extra = {}) {
   const token = getToken();
   const headers = { ...extra };
   if (token) {

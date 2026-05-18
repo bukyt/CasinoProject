@@ -8,28 +8,6 @@ function authHeaders() {
 }
 
 /**
- * GET /bonuses/players/{playerId}/credits
- * Matches: @GetMapping("/players/{playerId}/credits")
- */
-export const fetchPlayerCredits = async (playerId) => {
-  try {
-    // Convert playerId to string to ensure it matches Java's String @PathVariable
-    const res = await fetch(`/bonuses/players/${String(playerId)}/credits`, {
-      headers: authHeaders()
-    });
-
-    if (!res.ok) return 0;
-
-    const data = await res.json();
-    // Your Java controller returns: Map.of("balance", value)
-    return data && typeof data.balance === 'number' ? data.balance : 0;
-  } catch (err) {
-    console.error("fetchPlayerCredits error:", err);
-    return 0;
-  }
-};
-
-/**
  * POST /bonuses/{bonusId}/assign
  * This is the call that gives the +10 credits based on your new Java logic
  */

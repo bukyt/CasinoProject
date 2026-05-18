@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.casino.event.BetPlaced;
 import com.casino.event.BetSettled;
 import com.casino.event.GameEndingType;
+import com.casino.game.dto.wallet.WalletResponse;
 
 @Service
 public class GameService {
@@ -19,27 +20,48 @@ public class GameService {
     private final GameEventProducer eventProducer;
     private final GameRepository gameRepository;
     private final BonusClient bonusClient;
+    private final WalletClient walletClient; // ADDED: Wallet client integration
     private final Random random = new Random();
 
     public GameService(
             GameSessionRepository repository,
             GameEventProducer eventProducer,
             GameRepository gameRepository,
-            BonusClient bonusClient
+            BonusClient bonusClient,
+            WalletClient walletClient // ADDED: Injected via constructor
     ) {
         this.repository = repository;
         this.eventProducer = eventProducer;
         this.gameRepository = gameRepository;
         this.bonusClient = bonusClient;
+        this.walletClient = walletClient;
     }
 
     public GameSession createSession(String id, String gameId, double balance, Integer playerProfileId) {
         GameSession session = new GameSession();
         session.setId(id);
         session.setGameId(gameId);
-        session.setBalance(balance);
         session.setStatus("active");
         session.setPlayerProfileId(playerProfileId);
+
+        // WALLET FLOW: Fetch or create a wallet automatically on startup
+        Long profileIdLong = Long.valueOf(playerProfileId);
+        try {
+            WalletResponse wallet = walletClient.getWallet(profileIdLong);
+            if (wallet == null) {
+                System.out.println("Wallet not found for player: " + playerProfileId + ". Auto-creating wallet...");
+                wallet = walletClient.createWallet(profileIdLong);
+            }
+            
+            // If the wallet exists or was successfully created, use its live balance as the source of truth
+            if (wallet != null && wallet.availableBalance() != null) {
+                balance = wallet.availableBalance().doubleValue();
+            }
+        } catch (Exception e) {
+            System.err.println("WALLET SERVICE UNREACHABLE: Falling back to initial balance argument.");
+        }
+
+        session.setBalance(balance);
         return repository.save(session);
     }
 
@@ -74,6 +96,7 @@ public class GameService {
         }
 
         String playerId = String.valueOf(session.getPlayerProfileId());
+        Long profileIdLong = Long.valueOf(session.getPlayerProfileId());
 
         boolean freeSpin = false;
 
@@ -93,8 +116,17 @@ public class GameService {
             }
         }
 
+        // Check local session budget safety bounds
         if (session.getBalance() < amount) {
             throw new RuntimeException("Insufficient funds");
+        }
+
+        // WALLET FLOW: Credit from wallet (Decreases real remote funds)
+        if (amount > 0.0) {
+            WalletResponse updatedWallet = walletClient.credit(profileIdLong, BigDecimal.valueOf(amount));
+            if (updatedWallet == null) {
+                throw new RuntimeException("Wallet transaction rejected: Insufficient funds or service down.");
+            }
         }
 
         // award free spin randomly
@@ -118,13 +150,17 @@ public class GameService {
         }
 
         boolean win = random.nextDouble() < 0.3;
-
         double payout = 0.0;
 
         if (win) {
-            payout = amount + 10.0; // WINNING PAYS BET + 10 (FIXED PAYOUT FOR SIMPLICITY)
+            payout = amount + 10.0; // WINNING PAYS BET + 10
 
-            // IMPORTANT FIX: free spin win must still pay real money
+            // WALLET FLOW: Debit into wallet (Increases real remote funds for payouts)
+            if (payout > 0.0) {
+                walletClient.debit(profileIdLong, BigDecimal.valueOf(payout));
+            }
+            
+            // Sync local session cache state
             session.setBalance(session.getBalance() + payout);
         }
 
@@ -150,7 +186,6 @@ public class GameService {
         }
 
         repository.save(session);
-
         return bet;
     }
 

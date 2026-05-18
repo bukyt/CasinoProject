@@ -1,14 +1,19 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-// Import your auth helpers
+
+// 1. Pull the token tracker helper from base auth
 import { getAccountIdFromToken } from '../auth.js';
+
+// 2. Pull the header builder helper from the API service
+import { authHeaders } from '../services/authApi.js';
+
+// 3. FIX: Import the profile service helper
 import { fetchProfileByAccountId } from '../services/profileApi.js';
 
 const router = useRouter();
 const games = ref([]);
-const bonusBalance = ref(0);
-const playerId = ref(null); // Now reactive and starts null
+const playerId = ref(null); 
 
 const fetchData = async () => {
   try {
@@ -28,15 +33,11 @@ const fetchData = async () => {
     }
 
     playerId.value = profile.playerProfileId;
-
-    // 3. Fetch Games list (Proxy '/games' -> :8082)
-    const gRes = await fetch('/games');
+    // 3. Fetch Games list with Authorization Bearer token attached
+    const gRes = await fetch('/games', {
+      headers: authHeaders()
+    });
     games.value = await gRes.json();
-
-    // 4. Fetch Credits using the real playerId (Proxy '/bonuses' -> :8084)
-    const cRes = await fetch(`/bonuses/players/${playerId.value}/credits`);
-    const cData = await cRes.json();
-    bonusBalance.value = cData.balance;
   } catch (err) {
     console.error("Lobby load failed", err);
   }
@@ -51,18 +52,22 @@ const createSession = async (gameId) => {
   try {
     const res = await fetch('/games/sessions', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({
         gameId: gameId,
         initialBalance: 100.0,
-        playerProfileId: playerId.value // Dynamic ID
+        playerProfileId: playerId.value
       })
     });
+
+    if (!res.ok) {
+      console.error("Failed to initialize game session parameters:", res.status);
+      return;
+    }
 
     const session = await res.json();
     console.log("Session Response:", session);
 
-    // Look for ID in various possible fields
     const sid = session.id || session.sessionId || (typeof session === 'string' ? session : null);
 
     if (sid) {
@@ -77,17 +82,6 @@ const createSession = async (gameId) => {
   }
 };
 
-const addDebugCredits = async () => {
-  if (!playerId.value) return;
-  
-  await fetch(`/bonuses/players/${playerId.value}/debug-add`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ amount: 50.0 })
-  });
-  fetchData(); // Refresh balance
-};
-
 onMounted(fetchData);
 </script>
 
@@ -95,14 +89,6 @@ onMounted(fetchData);
   <div class="lobby">
     <header class="lobby-header">
       <h1>Casino Floor</h1>
-      <div v-if="playerId" class="user-info">
-        <div class="balance-card">
-          <span class="label">Bonus Credits:</span>
-          <span class="amount">${{ bonusBalance.toFixed(2) }}</span>
-        </div>
-        <button @click="addDebugCredits" class="debug-btn">+ Add $50</button>
-      </div>
-      <div v-else>Loading profile...</div>
     </header>
 
     <div class="game-grid">

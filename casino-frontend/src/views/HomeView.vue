@@ -22,11 +22,6 @@
             </span>
           </div>
 
-          <div class="balance-info">
-            <span class="label">Available Bonus Credits</span>
-            <span class="amount">{{ formattedCredits }}</span>
-          </div>
-
           <router-link to="/games" class="play-link">
             Go to Casino Lobby →
           </router-link>
@@ -307,7 +302,6 @@ import { computed, onMounted, ref } from "vue";
 import { getAccountIdFromToken, getUsernameFromToken } from "../auth.js";
 import { fetchProfileByAccountId } from "../services/profileApi.js";
 import { fetchCurrentAccount } from "../services/authApi.js";
-import { fetchPlayerCredits } from "../services/bonusApi.js";
 import { addWalletFunds, fetchWallet } from "../services/walletApi.js";
 import {
   fetchComplianceProfile,
@@ -319,7 +313,6 @@ const username = ref(getUsernameFromToken() || "");
 
 const profile = ref(null);
 const account = ref(null);
-const credits = ref(0);
 const walletFunds = ref(null);
 const walletError = ref("");
 const walletAddAmount = ref("");
@@ -337,7 +330,6 @@ const complianceLoaded = ref(false);
 const mayBet = computed(() => eligibility.value?.mayBet === true);
 const mayWithdraw = computed(() => eligibility.value?.mayWithdraw === true);
 
-const formattedCredits = computed(() => formatMoney(credits.value));
 const formattedWalletFunds = computed(() => {
   if (walletFunds.value === null || walletFunds.value === undefined) {
     return "—";
@@ -419,7 +411,11 @@ const refreshData = async () => {
   walletError.value = "";
   walletAddError.value = "";
   walletAddMessage.value = "";
-  walletFunds.value = null;
+  try{
+    walletFunds.value = wallet.availableBalance;
+  } catch {
+    walletFunds.value = null;
+  }
   resetComplianceState();
   account.value = null;
 
@@ -455,31 +451,6 @@ const refreshData = async () => {
     profile.value = profileData;
 
     const internalNumericId = profileData.playerProfileId;
-
-    if (internalNumericId !== undefined && internalNumericId !== null) {
-      const [bonusResult, walletResult] = await Promise.allSettled([
-        fetchPlayerCredits(internalNumericId),
-        fetchWallet(internalNumericId),
-      ]);
-
-      if (bonusResult.status === "fulfilled") {
-        credits.value = bonusResult.value;
-      } else {
-        console.warn("Bonus credits fetch failed:", bonusResult.reason);
-        credits.value = 0;
-      }
-
-      if (walletResult.status === "fulfilled") {
-        walletFunds.value = walletResult.value.availableBalance;
-      } else {
-        console.warn("Wallet fetch failed:", walletResult.reason);
-        walletError.value = "Wallet unavailable";
-      }
-    } else {
-      console.error("playerProfileId missing from profile JSON.", profileData);
-      loadError.value =
-        "Profile synced, but playerProfileId is missing. Ensure profile-service returns playerProfileId (integer).";
-    }
   } catch (e) {
     console.error("HomeView Sync Error:", e);
     loadError.value =

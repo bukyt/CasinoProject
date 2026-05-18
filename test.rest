@@ -1,0 +1,16 @@
+### Debug: Add $100 to Player 3 Wallet
+POST http://localhost:8085/wallet/debit/3
+Content-Type: application/json
+
+{
+  "amount": 100.00
+}
+
+### Debug: Create Wallet for Player 3
+POST http://localhost:8085/wallet/create/3
+Content-Type: application/json
+
+{
+  "playerId": 3,
+  "initialBalance": 100.00
+}
