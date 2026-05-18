@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.casino.profileservice.integration.AuthAccountClient;
+import com.casino.profileservice.security.ProfileAuth;
 import com.casino.profileservice.users.dto.ContactDetailsRequest;
 import com.casino.profileservice.users.dto.PlayerProfileRequest;
 import com.casino.profileservice.users.dto.PlayerProfileResponse;
@@ -32,7 +33,11 @@ public class PlayerProfileService {
     @Autowired
     private AuthAccountClient authAccountClient;
 
+    @Autowired
+    private ProfileAuth profileAuth;
+
     public PlayerProfileResponse createProfile(PlayerProfileRequest request, String authorizationHeader) {
+        profileAuth.requireOwnAccount(request.getAccountId());
         authAccountClient.verifyAccountExists(request.getAccountId(), authorizationHeader);
         if (playerProfileRepository.existsByAccountId(request.getAccountId())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
@@ -59,11 +64,14 @@ public class PlayerProfileService {
     }
 
     public PlayerProfileResponse getProfile(Integer playerProfileId) {
-        return mapToDto(requireProfile(playerProfileId));
+        PlayerProfile profile = requireProfile(playerProfileId);
+        profileAuth.requireOwnerOrAdmin(profile);
+        return mapToDto(profile);
     }
 
     public PlayerProfileResponse updateProfile(Integer playerProfileId, PlayerProfileRequest request) {
         PlayerProfile profile = requireProfile(playerProfileId);
+        profileAuth.requireOwnerOrAdmin(profile);
 
         if (playerProfileRepository.existsByAccountIdAndPlayerProfileIdNot(request.getAccountId(), playerProfileId)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
@@ -89,6 +97,7 @@ public class PlayerProfileService {
 
     public PlayerProfileResponse updateContact(Integer playerProfileId, ContactDetailsRequest request) {
         PlayerProfile profile = requireProfile(playerProfileId);
+        profileAuth.requireOwnerOrAdmin(profile);
 
         ContactDetails contactDetails = profile.getContactDetails() == null ? new ContactDetails()
                 : profile.getContactDetails();
@@ -108,6 +117,7 @@ public class PlayerProfileService {
 
     public PlayerProfileResponse updatePreferences(Integer playerProfileId, PreferencesRequest request) {
         PlayerProfile profile = requireProfile(playerProfileId);
+        profileAuth.requireOwnerOrAdmin(profile);
 
         Preferences preferences = profile.getPreferences() == null ? new Preferences() : profile.getPreferences();
         if (request.getLanguage() != null) {
@@ -125,10 +135,12 @@ public class PlayerProfileService {
      * Lookup by auth account id. Empty when no profile row exists.
      */
     public Optional<PlayerProfileResponse> findByAccountIdOptional(String accountId) {
+        profileAuth.requireAccountAccess(accountId);
         return playerProfileRepository.findByAccountId(accountId).map(this::mapToDto);
     }
 
     public PlayerProfileResponse getByAccountId(String accountId) {
+        profileAuth.requireAccountAccess(accountId);
         return findByAccountIdOptional(accountId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Profile not found"));
     }

@@ -1,5 +1,5 @@
 ### Auth REST client — start Postgres; use launch "Auth Service (local, no Eureka)" or --spring.profiles.active=local without discovery-server
-@host = http://localhost:8090
+@host = http://localhost:8080
 
 ### Register new account
 POST {{host}}/auth/register
@@ -15,7 +15,7 @@ POST {{host}}/auth/login
 Content-Type: application/json
 
 {
-  "username": "uus3",
+  "username": "uus",
   "password": "testik"
 }
 
@@ -29,7 +29,7 @@ Content-Type: application/json
 }
 
 ### Current account (replace TOKEN)
-@token = eyJhbGciOiJIUzI1NiJ9.eyJhY2NvdW50SWQiOiI0ZGQ1NjA0Ny00NzU0LTRiOTUtOWU3Mi03MTc3OTJmNjBhN2EiLCJyb2xlcyI6IlBMQVlFUiIsImp0aSI6IjMyZjIzMGMxLTRmMDEtNDMyMy1iOWM5LTkxZGFjYzYzYTRjZCIsInN1YiI6InV1czMiLCJpYXQiOjE3Nzg2NjgxMDcsImV4cCI6MTc3ODY3MTcwN30.HZygSnskWXVFWWFzbHujduhiP0ozr8TsEt9CQd_e0u0
+@token = eyJhbGciOiJIUzI1NiJ9.eyJhY2NvdW50SWQiOiIyYzA3MzhkMi1jNmMyLTQ2MzYtOTdlNC1mMDQ3ZTI0OThmM2YiLCJyb2xlcyI6IlBMQVlFUiIsImp0aSI6IjA5NGQ1YzRjLWMzNTYtNGE1Ny1hZTc2LTVkMDI4OTBhMzJkNiIsInN1YiI6InV1cyIsImlhdCI6MTc3OTEzMDEzNSwiZXhwIjoxNzc5MTMzNzM1fQ.CKVYLwlXXXgIoAUPb8LOpGs30fj3R5Ea9iMp5YvYkrU
 GET {{host}}/auth/me
 Authorization: Bearer {{token}}
 

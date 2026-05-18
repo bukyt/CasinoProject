@@ -8,10 +8,7 @@ GET http://localhost:8086/v3/api-docs
 ### Profiles API
 ##############################
 
-@token = eyJhbGciOiJIUzI1NiJ9.eyJhY2NvdW50SWQiOiJhMWIwYjU2ZC03NjkzLTRmNzUtYjQyZC0xMTM4Y2ZhNWY4MjQiLCJyb2xlcyI6IkFETUlOLFBMQVlFUiIsImp0aSI6Ijg4MmMzMzUwLWZmZjctNDc1NC1hOWY2LTIyMWZmZjc0MWRkMyIsInN1YiI6ImFkbWluIiwiaWF0IjoxNzc4NTg0MzAxLCJleHAiOjE3Nzg1ODc5MDF9.lbQ_wEM8dxKq0klNBBb7SkoB9XIk3-aYRenyg3rLykU
-### Create player profile
-POST http://localhost:8086/profiles
-content-type: application/json
+@token = eyJhbGciOiJIUzI1NiJ9.eyJhY2NvdW50SWQiOiIzZGJiZjhlZi02ZjM5LTQ4MWQtODJlYi1mMzgyNWQ4NzNkYmEiLCJyb2xlcyI6IkFETUlOLFBMQVlFUiIsImp0aSI6IjFhNTE4MWU2LTI3MzItNDYzNy05MjlhLTAxZWQzYmMxMzRlOSIsInN1YiI6ImFkbWluIiwiaWF0IjoxNzc5MTMyMzc2LCJleHAiOjE3NzkxMzU5NzZ9.JYriXo2rTvZYrJdjEYO0-L8Pm0O-VvXdZ7q8LFSpM6k
 Authorization: Bearer {{token}}
 
 {
@@ -27,7 +24,9 @@ Authorization: Bearer {{token}}
 }
 
 ### Get player profile by id (integer PK — use 1 or 2 for seeded data)
-GET http://localhost:8086/profiles/1
+GET http://localhost:8080/profiles/3
+content-type: application/json
+Authorization: Bearer {{token}}
 
 ### Update player profile
 PUT http://localhost:8086/profiles/1
