@@ -374,6 +374,57 @@ services:
       - discovery-server
       - kafka
 
+  wallet-db:
+    image: postgres:15-alpine
+    container_name: wallet-db
+    environment:
+      POSTGRES_DB: wallet_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5434:5432"
+    volumes:
+      - wallet-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d wallet_db" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  wallet:
+    build:
+      context: .
+      dockerfile: Dockerfile.service
+      args:
+        SERVICE_MODULE: wallet
+        SERVICE_PORT: 8085
+    container_name: wallet
+    ports:
+      - "8085:8085"
+    depends_on:
+      wallet-db:
+        condition: service_healthy
+      discovery-server:
+        condition: service_started
+      kafka:
+        condition: service_healthy
+    environment:
+      SERVER_PORT: 8085
+
+      SPRING_DATASOURCE_URL: jdbc:postgresql://wallet-db:5432/wallet_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      SPRING_JPA_HIBERNATE_DDL_AUTO: validate
+
+      SPRING_FLYWAY_ENABLED: "true"
+      SPRING_FLYWAY_LOCATIONS: classpath:db/migration
+      SPRING_FLYWAY_BASELINE_ON_MIGRATE: "true"
+
+      EUREKA_DEFAULT_ZONE: http://discovery-server:8761/eureka/
+
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      SPRING_KAFKA_CONSUMER_GROUP_ID: wallet-service
+
 volumes:
   payment-db-data:
   compliance-db-data:
@@ -381,3 +432,4 @@ volumes:
   profile-db-data:
   ledger-db-data:
   game-db-data:
+  wallet-db-data:
