@@ -97,6 +97,9 @@ router.beforeEach(async (to, _from, next) => {
     profile = await fetchProfileByAccountId(accountId);
   } catch (e) {
     console.error(e);
+    if (to.name === 'CompleteProfile') {
+      return next();
+    }
     return next(false);
   }
 
