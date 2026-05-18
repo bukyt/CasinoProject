@@ -13,15 +13,60 @@
           Your player profile is active and synced with game services.
         </p>
 
-        <div class="bonus-summary">
+        <div class="funds-summary">
+          <div class="balance-info">
+            <span class="label">Wallet Funds</span>
+            <span class="amount">{{ formattedWalletFunds }}</span>
+            <span v-if="walletError" class="balance-warning">
+              {{ walletError }}
+            </span>
+          </div>
+
           <div class="balance-info">
             <span class="label">Available Bonus Credits</span>
-            <span class="amount">{{ credits }}</span>
+            <span class="amount">{{ formattedCredits }}</span>
           </div>
+
           <router-link to="/games" class="play-link">
             Go to Casino Lobby →
           </router-link>
         </div>
+
+        <section class="wallet-actions">
+          <div>
+            <h2>Add funds</h2>
+            <p>Add money to your wallet balance before joining a game.</p>
+          </div>
+
+          <form class="wallet-add-form" @submit.prevent="handleAddFunds">
+            <label for="wallet-add-amount">Amount</label>
+            <div class="wallet-add-controls">
+              <input
+                id="wallet-add-amount"
+                v-model="walletAddAmount"
+                type="number"
+                min="0.01"
+                step="0.01"
+                inputmode="decimal"
+                placeholder="25.00"
+                :disabled="walletAddLoading"
+              />
+              <button
+                type="submit"
+                class="wallet-add-button"
+                :disabled="walletAddLoading || !canAddWalletFunds"
+              >
+                {{ walletAddLoading ? "Adding..." : "Add funds" }}
+              </button>
+            </div>
+            <span v-if="walletAddMessage" class="wallet-add-message success">
+              {{ walletAddMessage }}
+            </span>
+            <span v-if="walletAddError" class="wallet-add-message error-text">
+              {{ walletAddError }}
+            </span>
+          </form>
+        </section>
 
         <hr class="divider" />
 
@@ -263,6 +308,7 @@ import { getAccountIdFromToken, getUsernameFromToken } from "../auth.js";
 import { fetchProfileByAccountId } from "../services/profileApi.js";
 import { fetchCurrentAccount } from "../services/authApi.js";
 import { fetchPlayerCredits } from "../services/bonusApi.js";
+import { addWalletFunds, fetchWallet } from "../services/walletApi.js";
 import {
   fetchComplianceProfile,
   fetchPlayerEligibility,
@@ -274,6 +320,12 @@ const username = ref(getUsernameFromToken() || "");
 const profile = ref(null);
 const account = ref(null);
 const credits = ref(0);
+const walletFunds = ref(null);
+const walletError = ref("");
+const walletAddAmount = ref("");
+const walletAddLoading = ref(false);
+const walletAddError = ref("");
+const walletAddMessage = ref("");
 const loadError = ref("");
 
 const complianceProfile = ref(null);
@@ -284,6 +336,20 @@ const complianceLoaded = ref(false);
 
 const mayBet = computed(() => eligibility.value?.mayBet === true);
 const mayWithdraw = computed(() => eligibility.value?.mayWithdraw === true);
+
+const formattedCredits = computed(() => formatMoney(credits.value));
+const formattedWalletFunds = computed(() => {
+  if (walletFunds.value === null || walletFunds.value === undefined) {
+    return "—";
+  }
+
+  return formatMoney(walletFunds.value);
+});
+
+const canAddWalletFunds = computed(() => {
+  const amount = Number(walletAddAmount.value);
+  return Number.isFinite(amount) && amount > 0 && profile.value?.playerProfileId != null;
+});
 
 const complianceStatusClass = computed(() => {
   const risk =
@@ -331,8 +397,29 @@ const formatLimit = (limit) => {
   return `${limit.amount} / ${limit.period}`;
 };
 
+const formatMoney = (value) => {
+  const amount = Number(value ?? 0);
+
+  if (Number.isNaN(amount)) {
+    return "—";
+  }
+
+  try {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: profile.value?.currency || "USD",
+    }).format(amount);
+  } catch {
+    return amount.toFixed(2);
+  }
+};
+
 const refreshData = async () => {
   loadError.value = "";
+  walletError.value = "";
+  walletAddError.value = "";
+  walletAddMessage.value = "";
+  walletFunds.value = null;
   resetComplianceState();
   account.value = null;
 
@@ -370,7 +457,24 @@ const refreshData = async () => {
     const internalNumericId = profileData.playerProfileId;
 
     if (internalNumericId !== undefined && internalNumericId !== null) {
-      credits.value = await fetchPlayerCredits(internalNumericId);
+      const [bonusResult, walletResult] = await Promise.allSettled([
+        fetchPlayerCredits(internalNumericId),
+        fetchWallet(internalNumericId),
+      ]);
+
+      if (bonusResult.status === "fulfilled") {
+        credits.value = bonusResult.value;
+      } else {
+        console.warn("Bonus credits fetch failed:", bonusResult.reason);
+        credits.value = 0;
+      }
+
+      if (walletResult.status === "fulfilled") {
+        walletFunds.value = walletResult.value.availableBalance;
+      } else {
+        console.warn("Wallet fetch failed:", walletResult.reason);
+        walletError.value = "Wallet unavailable";
+      }
     } else {
       console.error("playerProfileId missing from profile JSON.", profileData);
       loadError.value =
@@ -380,6 +484,38 @@ const refreshData = async () => {
     console.error("HomeView Sync Error:", e);
     loadError.value =
       e.message || "Failed to communicate with profile service.";
+  }
+};
+
+const handleAddFunds = async () => {
+  walletAddError.value = "";
+  walletAddMessage.value = "";
+
+  const playerProfileId = profile.value?.playerProfileId;
+  const amount = Number(walletAddAmount.value);
+
+  if (playerProfileId === undefined || playerProfileId === null) {
+    walletAddError.value = "Player profile ID is missing.";
+    return;
+  }
+
+  if (!Number.isFinite(amount) || amount <= 0) {
+    walletAddError.value = "Enter an amount greater than 0.";
+    return;
+  }
+
+  walletAddLoading.value = true;
+  try {
+    const wallet = await addWalletFunds(playerProfileId, amount.toFixed(2));
+    walletFunds.value = wallet.availableBalance;
+    walletAddAmount.value = "";
+    walletAddMessage.value = "Funds added";
+    walletError.value = "";
+  } catch (e) {
+    console.error("Add wallet funds failed:", e);
+    walletAddError.value = e.message || "Could not add wallet funds.";
+  } finally {
+    walletAddLoading.value = false;
   }
 };
 
@@ -509,15 +645,20 @@ h1 {
   font-size: 0.95rem;
 }
 
-.bonus-summary {
+.funds-summary {
   background: rgba(76, 175, 80, 0.1);
   border: 1px solid #4caf50;
   border-radius: 10px;
   padding: 1.5rem;
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  gap: 1.25rem;
   align-items: center;
-  margin-bottom: 2rem;
+  margin-bottom: 1rem;
+}
+
+.balance-info {
+  min-width: 0;
 }
 
 .amount {
@@ -531,6 +672,112 @@ h1 {
   text-transform: uppercase;
   color: #aaa;
   letter-spacing: 1px;
+}
+
+.balance-warning {
+  display: block;
+  margin-top: 0.25rem;
+  color: #ffb74d;
+  font-size: 0.8rem;
+}
+
+.wallet-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 340px);
+  gap: 1.25rem;
+  align-items: end;
+  background: #181818;
+  border: 1px solid #333;
+  border-radius: 10px;
+  padding: 1rem;
+  margin-bottom: 2rem;
+}
+
+.wallet-actions h2 {
+  margin: 0 0 0.35rem;
+  color: #fff;
+  font-size: 1rem;
+}
+
+.wallet-actions p {
+  margin: 0;
+  color: #888;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.wallet-add-form {
+  min-width: 0;
+}
+
+.wallet-add-form label {
+  display: block;
+  margin-bottom: 0.4rem;
+  color: #aaa;
+  font-size: 0.75rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.wallet-add-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.5rem;
+}
+
+.wallet-add-controls input {
+  min-width: 0;
+  width: 100%;
+  border: 1px solid #3f6641;
+  border-radius: 8px;
+  background: #151f17;
+  color: #eee;
+  padding: 0.65rem 0.75rem;
+}
+
+.wallet-add-controls input:disabled {
+  opacity: 0.7;
+}
+
+.wallet-add-button {
+  border: none;
+  border-radius: 8px;
+  background: #4caf50;
+  color: #fff;
+  cursor: pointer;
+  font-weight: bold;
+  padding: 0.65rem 0.9rem;
+  white-space: nowrap;
+}
+
+.wallet-add-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.wallet-add-message {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: 0.8rem;
+}
+
+.wallet-add-message.success {
+  color: #81c784;
+}
+
+.wallet-add-message.error-text {
+  color: #ff8a80;
+}
+
+@media (max-width: 680px) {
+  .funds-summary,
+  .wallet-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .play-link {
+    text-align: center;
+  }
 }
 
 .play-link {
