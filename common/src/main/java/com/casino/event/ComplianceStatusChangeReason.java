@@ -1,0 +1,14 @@
+package com.casino.event;
+
+public enum ComplianceStatusChangeReason {
+    AGE_VERIFICATION_CHANGED,
+    SELF_EXCLUSION_ACTIVATED,
+    SELF_EXCLUSION_REMOVED,
+    RISK_LEVEL_CHANGED,
+    FLAG_CREATED,
+    FLAG_UPDATED,
+    FLAG_RESOLVED,
+    LIMIT_CREATED,
+    LIMIT_UPDATED,
+    LIMIT_REVOKED
+}
