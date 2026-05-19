@@ -114,6 +114,8 @@ project for enterprise systems integration
 
 # RUN PROJECT
 
+docker compose up
+
 run each service seperately
 http://localhost:8761/
 for eureka stats
