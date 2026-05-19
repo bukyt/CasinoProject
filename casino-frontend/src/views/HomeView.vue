@@ -302,7 +302,8 @@ import { computed, onMounted, ref } from "vue";
 import { getAccountIdFromToken, getUsernameFromToken } from "../auth.js";
 import { fetchProfileByAccountId } from "../services/profileApi.js";
 import { fetchCurrentAccount } from "../services/authApi.js";
-import { addWalletFunds, fetchWallet } from "../services/walletApi.js";
+import { fetchWallet } from "../services/walletApi.js";
+import { createDepositPayment, fetchPayment } from "../services/paymentApi.js";
 import {
   fetchComplianceProfile,
   fetchPlayerEligibility,
@@ -406,6 +407,8 @@ const formatMoney = (value) => {
   }
 };
 
+const sleep = (ms) => new Promise((resolve) => window.setTimeout(resolve, ms));
+
 const loadWalletFunds = async (playerProfileId) => {
   walletFunds.value = null;
 
@@ -491,10 +494,32 @@ const handleAddFunds = async () => {
 
   walletAddLoading.value = true;
   try {
-    const wallet = await addWalletFunds(playerProfileId, amount.toFixed(2));
-    walletFunds.value = wallet.availableBalance;
+    const payment = await createDepositPayment({
+      playerProfileId,
+      amount: amount.toFixed(2),
+      provider: "MOCK",
+    });
+
+    let currentPayment = payment;
+    for (
+      let attempt = 0;
+      attempt < 8 && currentPayment?.status === "PENDING";
+      attempt += 1
+    ) {
+      await sleep(1000);
+      currentPayment = await fetchPayment(payment.paymentId);
+    }
+
+    if (currentPayment?.status === "FAILED") {
+      throw new Error("The mock payment provider rejected the deposit.");
+    }
+
+    await loadWalletFunds(playerProfileId);
     walletAddAmount.value = "";
-    walletAddMessage.value = "Funds added";
+    walletAddMessage.value =
+      currentPayment?.status === "COMPLETED"
+        ? "Funds added"
+        : "Deposit created; funds will appear after provider confirmation.";
     walletError.value = "";
   } catch (e) {
     console.error("Add wallet funds failed:", e);
