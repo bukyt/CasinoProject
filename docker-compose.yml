@@ -252,6 +252,7 @@ services:
 
       AUTH_SERVICE_BASE_URL: http://auth-service:8090
       AUTH_VERIFICATION_ENABLED: "true"
+      WALLET_SERVICE_BASE_URL: http://wallet:8085
       JWT_SECRET: K7gNU3sdo4LER9GjjmemsGerhHwJh4aQHKjjjZVwzVXo=
 
       EVENTS_ACCOUNT_STATUS_TOPIC: auth.account-status
@@ -261,6 +262,8 @@ services:
       discovery-server:
         condition: service_started
       auth-service:
+        condition: service_started
+      wallet:
         condition: service_started
       kafka:
         condition: service_healthy

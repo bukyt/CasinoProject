@@ -406,16 +406,30 @@ const formatMoney = (value) => {
   }
 };
 
+const loadWalletFunds = async (playerProfileId) => {
+  walletFunds.value = null;
+
+  if (playerProfileId === undefined || playerProfileId === null) {
+    walletError.value = "Player profile ID is missing.";
+    return;
+  }
+
+  try {
+    const wallet = await fetchWallet(playerProfileId);
+    walletFunds.value = wallet.availableBalance;
+    walletError.value = "";
+  } catch (e) {
+    console.error("Wallet fetch failed:", e);
+    walletError.value = e.message || "Could not load wallet funds.";
+  }
+};
+
 const refreshData = async () => {
   loadError.value = "";
   walletError.value = "";
   walletAddError.value = "";
   walletAddMessage.value = "";
-  try{
-    walletFunds.value = wallet.availableBalance;
-  } catch {
-    walletFunds.value = null;
-  }
+  walletFunds.value = null;
   resetComplianceState();
   account.value = null;
 
@@ -450,7 +464,7 @@ const refreshData = async () => {
 
     profile.value = profileData;
 
-    const internalNumericId = profileData.playerProfileId;
+    await loadWalletFunds(profileData.playerProfileId);
   } catch (e) {
     console.error("HomeView Sync Error:", e);
     loadError.value =

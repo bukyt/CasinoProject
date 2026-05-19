@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.casino.profileservice.integration.AuthAccountClient;
+import com.casino.profileservice.integration.WalletClient;
 import com.casino.profileservice.security.ProfileAuth;
 import com.casino.profileservice.users.dto.ContactDetailsRequest;
 import com.casino.profileservice.users.dto.PlayerProfileRequest;
@@ -21,6 +22,7 @@ import com.casino.profileservice.users.repository.PlayerProfileRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class PlayerProfileService {
@@ -34,8 +36,12 @@ public class PlayerProfileService {
     private AuthAccountClient authAccountClient;
 
     @Autowired
+    private WalletClient walletClient;
+
+    @Autowired
     private ProfileAuth profileAuth;
 
+    @Transactional
     public PlayerProfileResponse createProfile(PlayerProfileRequest request, String authorizationHeader) {
         profileAuth.requireOwnAccount(request.getAccountId());
         authAccountClient.verifyAccountExists(request.getAccountId(), authorizationHeader);
@@ -60,7 +66,9 @@ public class PlayerProfileService {
                         .build())
                 .build();
 
-        return mapToDto(playerProfileRepository.save(profile));
+        PlayerProfile savedProfile = playerProfileRepository.saveAndFlush(profile);
+        walletClient.createWallet(savedProfile.getPlayerProfileId());
+        return mapToDto(savedProfile);
     }
 
     public PlayerProfileResponse getProfile(Integer playerProfileId) {
