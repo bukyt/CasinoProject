@@ -1,5 +1,6 @@
 package com.casino.game;
 
+import com.casino.CasinoConstants;
 import com.casino.event.BetPlaced;
 import com.casino.event.BetSettled;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -15,10 +16,18 @@ public class GameEventProducer {
     }
 
     public void sendBetPlaced(BetPlaced event) {
-        kafkaTemplate.send("betplaced", event);
+        kafkaTemplate.send(
+            CasinoConstants.FINANCIAL_EVENTS_TOPIC_NAME,
+            String.valueOf(event.getPlayerProfileId()),
+            event
+        );
     }
 
     public void sendBetSettled(BetSettled event) {
-        kafkaTemplate.send("betsettled", event);
+        kafkaTemplate.send(
+            CasinoConstants.FINANCIAL_EVENTS_TOPIC_NAME,
+            String.valueOf(event.getPlayerProfileId()),
+            event
+        );
     }
 }
