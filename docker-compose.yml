@@ -148,8 +148,8 @@ services:
         SERVICE_MODULE: compliance
         SERVICE_PORT: 8087
     container_name: compliance
-    ports:
-      - "8087:8087"
+    expose:
+      - "8087"
     depends_on:
       compliance-db:
         condition: service_healthy
@@ -168,6 +168,7 @@ services:
       EUREKA_DEFAULT_ZONE: http://discovery-server:8761/eureka/
 
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      JWT_SECRET: K7gNU3sdo4LER9GjjmemsGerhHwJh4aQHKjjjZVwzVXo=
 
   payment:
     build:
@@ -176,8 +177,8 @@ services:
       args:
         SERVICE_MODULE: payment
         SERVICE_PORT: 8091
-    ports:
-      - "8091:8091"
+    expose:
+      - "8091"
     depends_on:
       payment-db:
         condition: service_healthy
@@ -192,6 +193,7 @@ services:
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: postgres
       EUREKA_DEFAULT_ZONE: http://discovery-server:8761/eureka/
+      JWT_SECRET: K7gNU3sdo4LER9GjjmemsGerhHwJh4aQHKjjjZVwzVXo=
 
   payment-db:
     image: postgres:15-alpine

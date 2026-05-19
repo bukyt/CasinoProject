@@ -8,6 +8,7 @@ import com.casino.service.FlagService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -15,8 +16,9 @@ import org.springframework.web.bind.annotation.RestController;
 public class ComplianceFlagController implements ComplianceFlagApi {
 
     private final FlagService complianceFlagService;
- 
+
     @Override
+    @PreAuthorize("@profileSecurity.isOwnerOrAdmin(authentication, #playerId)")
     public ResponseEntity<ComplianceFlagDto> createComplianceFlag(
         Long playerId,
         CreateComplianceFlagDTO request
@@ -27,6 +29,7 @@ public class ComplianceFlagController implements ComplianceFlagApi {
     }
 
     @Override
+    @PreAuthorize("@profileSecurity.isOwnerOrAdmin(authentication, #playerId)")
     public ResponseEntity<ComplianceFlagDto> modifyComplianceFlag(
         Long playerId,
         Long flagId,

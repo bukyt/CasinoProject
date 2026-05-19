@@ -12,6 +12,7 @@ import lombok.AllArgsConstructor;
 import lombok.val;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
@@ -24,6 +25,7 @@ public class ComplianceController implements ComplianceApi {
     private final EligibilityService eligibilityService;
 
     @Override
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ComplianceProfileDto> createComplianceProfile(
         @Valid @RequestBody CreateComplianceProfileDTO createComplianceProfileDTO) {
 
@@ -32,12 +34,14 @@ public class ComplianceController implements ComplianceApi {
     }
 
     @Override
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ComplianceProfileDto> getComplianceProfile(@PathVariable("playerId") Long playerId) {
         val profile = complianceService.getComplianceProfile(playerId);
         return ResponseEntity.ok(profile);
     }
 
     @Override
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ComplianceProfileDto> modifyComplianceProfile(
         @PathVariable Long playerId,
         @RequestBody ModifyComplianceProfileDTO modifyComplianceProfileDTO) {
@@ -46,9 +50,8 @@ public class ComplianceController implements ComplianceApi {
     }
 
     @Override
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<EligibilityResponseDTO> checkEligibility(Long playerId) {
         return ResponseEntity.ok(eligibilityService.checkEligibility(playerId));
     }
-
-
 }
